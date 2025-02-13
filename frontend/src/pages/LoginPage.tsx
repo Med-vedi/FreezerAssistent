@@ -15,6 +15,8 @@ const LoginPage = () => {
                 form={form}
                 className="w-[90%] max-w-[400px] mx-auto bg-white rounded-lg border border-gray-200 p-6! shadow-md "
             >
+                <h1 className="text-2xl font-bold text-center mb-[64px]!">Welcome back!</h1>
+
                 <Form.Item
                     name="email"
                     label="Email"
