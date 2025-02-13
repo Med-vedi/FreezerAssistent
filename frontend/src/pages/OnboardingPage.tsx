@@ -42,7 +42,17 @@ const OnboardingPage = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <h1>OnboardingPage</h1>
+            <article className="flex flex-col w-auto md:gap-2 justify-center items-center text-center p-4 rounded-lg bg-white shadow-md mb-4">
+                <h1 className="mb-2! text-2xl md:text-4xl font-bold">
+                    <FormattedMessage id="onboarding.title" />
+                </h1>
+                <p className="mb-1! md:text-base">
+                    <FormattedMessage id="onboarding.description" />
+                </p>
+                <p className="mb-1! md:text-base">
+                    <FormattedMessage id="onboarding.tip" />
+                </p>
+            </article>
             <div className="flex flex-col md:flex-row gap-4 justify-center flex-wrap">
                 {boxes.map((box, idx) => (
                     <BoxCard
@@ -80,10 +90,10 @@ const BoxCard = ({ box, boxes, onTitleChange, onAdd, onRemove }: BoxCardProps) =
     const { type, title } = box;
     const isDesktop = useBreakpoints().md;
     return (
-        <div className="w-full max-w-[400px] h-full bg-white rounded-lg p-4 shadow-md flex">
+        <div className="w-full max-w-[400px] bg-white rounded-lg p-4 shadow-md flex items-center">
             {type === 'freezer' ? <Freezer size={isDesktop ? 200 : 100} /> : <Fridge size={isDesktop ? 200 : 100} />}
-            <div className="flex flex-col gap-2">
-                <h1 className="text-2xl font-bold mb-0!">
+            <div className="flex flex-col justify-between h-full gap-2">
+                <h1 className="text-3xl font-bold mb-0!">
                     <FormattedMessage id={type} />
                 </h1>
                 {/* <p className="text-sm text-gray-500">
