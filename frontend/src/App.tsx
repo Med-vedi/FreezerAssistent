@@ -3,7 +3,7 @@ import MainLayout from './layout/MainLayout'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/LoginPage'
 import SignUp from './pages/SignUpPage'
-import Dashboard from './pages/DashboardPage'
+import Dashboard from './pages/Dashboard/DashboardPage'
 import { PATHS } from './constants/paths'
 import Onboarding from './pages/OnboardingPage'
 function App() {

@@ -1,8 +1,14 @@
-export const boxes = [
+import { Box } from '@/models/boxes';
+
+export const boxes: Partial<Box>[] = [
     {
-        _id: { $oid: "67adfea7a37cf6056f918af9" },
-        id: "box_1",
-        title: "medvedi freezer",
-        shelves_id: ["1"]
-    }
+        type: 'freezer',
+        title: `Freezer #1`,
+        id: 'freezer-1'
+    },
+    {
+        type: 'fridge',
+        title: `Fridge #1`,
+        id: 'fridge-1'
+    },
 ]

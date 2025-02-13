@@ -3,4 +3,5 @@ export interface Box {
     id: string;
     title: string;
     shelves_id: string[];
+    type: 'freezer' | 'fridge';
 }

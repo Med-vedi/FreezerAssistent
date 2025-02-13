@@ -1,14 +1,11 @@
 export interface Product {
     id: string;
-    [key: string]: ProductDetails | string;
-}
-
-export interface ProductDetails {
     name: string;
     category: ProductCategory;
     emoji: string;
     en: string;
     it: string;
+    expirationDate?: string;
 }
 
 export type ProductCategory =

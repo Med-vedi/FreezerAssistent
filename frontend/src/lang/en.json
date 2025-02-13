@@ -17,5 +17,13 @@
     "remove": "Remove",
     "delete": "Delete",
     "continue": "Continue",
-    "lets.go": "Let's go!"
+    "lets.go": "Let's go!",
+    "productsWithExpirationDate": "Products with expiration date",
+    "productsWithoutExpirationDate": "Products without expiration date",
+    "products": "Products",
+    "products.all": "All products",
+    "expirationDate": "Expiration date",
+    "expirationDate.placeholder": "Select the expiration date",
+    "expirationDate.error": "The expiration date is required",
+    "expirationDate.add": "Add expiration date"
 }

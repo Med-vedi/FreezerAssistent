@@ -17,5 +17,13 @@
     "remove": "Rimuovi",
     "delete": "Cancella",
     "continue": "Continua",
-    "lets.go": "Iniziamo!"
+    "lets.go": "Iniziamo!",
+    "productsWithExpirationDate": "Prodotti con data di scadenza",
+    "productsWithoutExpirationDate": "Prodotti senza data di scadenza",
+    "products": "Prodotti",
+    "products.all": "Tutti i prodotti",
+    "expirationDate": "Data di scadenza",
+    "expirationDate.placeholder": "Seleziona la data di scadenza",
+    "expirationDate.error": "La data di scadenza è obbligatoria",
+    "expirationDate.add": "Aggiungi data di scadenza"
 }
