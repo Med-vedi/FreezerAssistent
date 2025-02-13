@@ -5,7 +5,7 @@ import { useBreakpoints } from '@/hooks/useBreakpoints'
 const Navbar = ({ title, showAvatar = true }: { title: string, showAvatar?: boolean }) => {
     const isDesktop = useBreakpoints().md
     return (
-        <div className="flex justify-between items-center px-6 py-4 shadow-md bg-white">
+        <div className="flex justify-between items-center px-6 py-4 shadow-md bg-white z-10">
             {isDesktop &&
                 <div className="flex items-center gap-2">
                     <Logo height={36} />

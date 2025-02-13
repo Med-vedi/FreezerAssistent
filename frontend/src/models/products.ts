@@ -6,6 +6,8 @@ export interface Product {
     en: string;
     it: string;
     expirationDate?: string;
+    boxId?: string;
+    count?: number;
 }
 
 export type ProductCategory =

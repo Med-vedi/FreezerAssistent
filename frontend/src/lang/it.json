@@ -13,6 +13,8 @@
     "forgotPassword": "Hai dimenticato la password?",
     "count": "Quantità",
     "add": "Aggiungi",
+    "add.product": "Aggiungi elemento",
+    "add.item": "Aggiungi elemento",
     "add.another.one": "Aggiungi un altro",
     "remove": "Rimuovi",
     "delete": "Cancella",
@@ -25,5 +27,10 @@
     "expirationDate": "Data di scadenza",
     "expirationDate.placeholder": "Seleziona la data di scadenza",
     "expirationDate.error": "La data di scadenza è obbligatoria",
-    "expirationDate.add": "Aggiungi data di scadenza"
+    "expirationDate.add": "Aggiungi data di scadenza",
+    "confirm": "Conferma",
+    "shelf": "Scaffale",
+    "description": "Descrizione",
+    "description.placeholder": "Inserisci la descrizione del prodotto",
+    "box": "Box"
 }

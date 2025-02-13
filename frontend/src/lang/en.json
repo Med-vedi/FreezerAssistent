@@ -13,6 +13,8 @@
     "forgotPassword": "Forgot Password?",
     "count": "Count",
     "add": "Add",
+    "add.product": "Add product",
+    "add.item": "Add item",
     "add.another.one": "Add another one",
     "remove": "Remove",
     "delete": "Delete",
@@ -25,5 +27,10 @@
     "expirationDate": "Expiration date",
     "expirationDate.placeholder": "Select the expiration date",
     "expirationDate.error": "The expiration date is required",
-    "expirationDate.add": "Add expiration date"
+    "expirationDate.add": "Add expiration date",
+    "confirm": "Confirm",
+    "shelf": "Shelf",
+    "description": "Description",
+    "description.placeholder": "Enter the product description",
+    "box": "Box"
 }
