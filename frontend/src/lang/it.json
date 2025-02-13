@@ -1,0 +1,21 @@
+{
+    "freezer": "Freezer",
+    "fridge": "Frigorifero",
+    "onboarding.title": "Inizia a utilizzare il nostro servizio",
+    "onboarding.description": "Seleziona il tipo di box che preferisci",
+    "onboarding.tip": "Tip: puoi selezionare più di uno dispositivo",
+    "name": "Nome",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Conferma Password",
+    "register": "Registrati",
+    "login": "Accedi",
+    "forgotPassword": "Hai dimenticato la password?",
+    "count": "Quantità",
+    "add": "Aggiungi",
+    "add.another.one": "Aggiungi un altro",
+    "remove": "Rimuovi",
+    "delete": "Cancella",
+    "continue": "Continua",
+    "lets.go": "Iniziamo!"
+}

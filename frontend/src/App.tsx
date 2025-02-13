@@ -1,17 +1,19 @@
 import './App.css'
 import MainLayout from './layout/MainLayout'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import LoginPage from './pages/LoginPage'
-import SignUpPage from './pages/SignUpPage'
-import Dashboard from './pages/Dashboard'
+import Login from './pages/LoginPage'
+import SignUp from './pages/SignUpPage'
+import Dashboard from './pages/DashboardPage'
 import { PATHS } from './constants/paths'
+import Onboarding from './pages/OnboardingPage'
 function App() {
   return (
     <BrowserRouter>
-      <MainLayout      >
+      <MainLayout>
         <Routes>
-          <Route path={PATHS.LOGIN} element={<LoginPage />} />
-          <Route path={PATHS.SIGNUP} element={<SignUpPage />} />
+          <Route path={PATHS.LOGIN} element={<Login />} />
+          <Route path={PATHS.SIGNUP} element={<SignUp />} />
+          <Route path={PATHS.ONBOARDING} element={<Onboarding />} />
           <Route path={PATHS.DASHBOARD} element={<Dashboard />} />
           <Route path={PATHS.HOME} element={
             <div>
