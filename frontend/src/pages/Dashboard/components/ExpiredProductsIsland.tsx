@@ -28,7 +28,7 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
     useEffect(() => {
         setProductsWithExpirationDate(mproducts.map((product) => {
             if (product.id && product.id.length % 2 === 0) {
-                return { ...product, expirationDate: new Date().toISOString() }
+                return { ...product, expirationDate: new Date() }
             }
             return product
         }))
