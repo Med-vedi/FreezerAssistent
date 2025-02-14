@@ -10,9 +10,10 @@ interface DrawerCustomProps {
     children: React.ReactNode;
     props?: DrawerProps;
     width?: string;
+    footer?: React.ReactNode;
 }
 
-const DrawerCustom = ({ open, title, children, onClose, width, ...props }: DrawerCustomProps) => {
+const DrawerCustom = ({ open, title, children, onClose, width, footer, ...props }: DrawerCustomProps) => {
     const isDesktop = useBreakpoints().md;
     const [touchStart, setTouchStart] = React.useState<number | null>(null);
     const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
@@ -53,6 +54,7 @@ const DrawerCustom = ({ open, title, children, onClose, width, ...props }: Drawe
                 </div>}
                 open={open}
                 onClose={onClose}
+                footer={footer}
             >
                 {children}
             </Drawer>
@@ -71,6 +73,7 @@ const DrawerCustom = ({ open, title, children, onClose, width, ...props }: Drawe
             rootStyle={{ position: 'fixed', bottom: 0 }}
             style={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
             {...props}
+            footer={footer}
         >
             <div
                 onTouchStart={onTouchStart}

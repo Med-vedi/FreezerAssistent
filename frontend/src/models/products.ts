@@ -5,8 +5,11 @@ export interface Product {
     emoji: string;
     en: string;
     it: string;
-    expirationDate?: string;
+    expirationDate?: Date;
+
+    categoryId?: number;
     boxId?: string;
+    shelfId?: string;
     count?: number;
 }
 
@@ -17,4 +20,4 @@ export type ProductCategory =
     | 'frozen' | 'pasta_fresca' | 'dolci' | 'sughi'
     | 'piatti_pronti' | 'primi_pronti' | 'secondi_pronti' | 'contorni' | 'frutta'
     | 'carne' | 'pane_da_forno' | 'insalate' | 'spreads' | 'cereali' | 'legumi'
-    | 'secondi' | 'street_food' | 'antipasti';
+    | 'secondi' | 'street_food' | 'antipasti' | 'altro';

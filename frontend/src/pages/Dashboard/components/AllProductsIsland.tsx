@@ -25,7 +25,7 @@ const AllProductsIsland = ({ handleProductClick, selectedProduct }: { handleProd
         <IslandLayout>
             <div className='flex flex-col gap-4 overflow-y-auto h-[360px]'>
                 <header className='sticky top-0 left-0 right-0 bg-[#f5f5f5] z-0!'>
-                    <h1><FormattedMessage id="productsWithoutExpirationDate" />:</h1>
+                    <h1><FormattedMessage id="products.catalog" />:</h1>
                     <Input
                         placeholder='Search'
                         className='mb-4'

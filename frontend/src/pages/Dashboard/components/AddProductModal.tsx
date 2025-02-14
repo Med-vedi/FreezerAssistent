@@ -4,12 +4,11 @@ import React from 'react'
 import ProductDrawerCard from './ProductDrawerCard'
 import { useIntl } from 'react-intl'
 
-const AddProductModal = ({ open, onCancel, product }: { open: boolean, onCancel: () => void, product: Product }) => {
+const AddProductModal = ({ open, onCancel, product }: { open: boolean, onCancel: () => void, product?: Product }) => {
     const intl = useIntl()
 
     const handleConfirm = () => {
         onCancel()
-        console.log('FIREEE: ', product);
     }
 
     return (

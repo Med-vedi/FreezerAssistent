@@ -20,8 +20,10 @@
     "delete": "Cancella",
     "continue": "Continua",
     "lets.go": "Iniziamo!",
+    "products.catalog": "Catalogo prodotti",
     "productsWithExpirationDate": "Prodotti con data di scadenza",
     "productsWithoutExpirationDate": "Prodotti senza data di scadenza",
+
     "products": "Prodotti",
     "products.all": "Tutti i prodotti",
     "expirationDate": "Data di scadenza",
@@ -33,6 +35,12 @@
     "description": "Descrizione",
     "description.placeholder": "Inserisci la descrizione del prodotto",
     "box": "Box",
+    "category": "Categoria",
+    "category.placeholder": "Seleziona la categoria",
+    "category.error": "La categoria è obbligatoria",
+    "product": "Prodotto",
+    "product.placeholder": "Seleziona il prodotto",
+    "product.error": "Il prodotto è obbligatorio",
     "search": "Cerca",
     "search.placeholder": "Cerca un prodotto",
     "search.clear": "Cancella"

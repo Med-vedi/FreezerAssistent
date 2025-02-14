@@ -1,4 +1,5 @@
 export const categories = [
+    { "id": 0, "name": "Altro", "emoji": "🍴", "en": "Other", "it": "Altro" },
     { "id": 1, "name": "Vini", "emoji": "🍷", "en": "Wines", "it": "Vini" },
     { "id": 2, "name": "Liquori", "emoji": "🥃", "en": "Liquors", "it": "Liquori" },
     { "id": 3, "name": "Caffetteria", "emoji": "☕", "en": "Cafeteria", "it": "Caffetteria" },
