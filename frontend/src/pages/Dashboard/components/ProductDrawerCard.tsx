@@ -11,24 +11,25 @@ import Fridge from '@/assets/icons/Fridge';
 import { shelves } from '@/MOCKS/shelves';
 import { products } from '@/MOCKS/products';
 import { categories } from '@/MOCKS/categories';
-
+import { Category } from '@/models/categories';
 const initialProduct: Partial<Product> = {
     id: new Date().getTime().toString(),
     name: '',
     category: 'altro',
-    expirationDate: new Date(),
+    expiration_date: new Date().toISOString(),
     count: 0
 }
-const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfirm: () => void }) => {
-    const [expirationDate, setExpirationDate] = useState<Date>(product?.expirationDate ? new Date(product.expirationDate) : new Date());
+const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfirm: (product: Product) => void }) => {
+    const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
     const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct)
     const [productsList, setProductsList] = useState<Product[]>(products)
+    const [categoriesList, setCategoriesList] = useState<Category[]>(categories)
     const [newProductName, setNewProductName] = useState('')
 
+    console.log('productInfo: ', productInfo);
     const intl = useIntl();
     const inputRef = useRef<InputRef>(null);
 
-    const categoriesOptions = categories.map(category => ({ value: category.id, label: <span className='text-sm text-gray-500'>{category.emoji} {category.name}</span> }))
 
     const mboxes = boxes.map(box => ({
         value: box.id, label: <div className='flex items-center gap-2'>
@@ -40,33 +41,42 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
     }))
 
     useEffect(() => {
+        setCategoriesList(categories)
+    }, [categories])
+
+    useEffect(() => {
         if (product) {
             setProductInfo({
                 ...product,
-                expirationDate: product.expirationDate,
+                expiration_date: product.expiration_date,
                 count: product.count || 0,
-                categoryId: product.categoryId || 0,
+                category_id: product.category_id || 0,
                 name: product.name || '',
-                boxId: product.boxId || boxes[0].id,
-                shelfId: product.shelfId || shelves[0].id
+                box_id: product.box_id || boxes[0].id,
+                shelf_id: product.shelf_id || shelves[0].id
             })
         } else {
             setProductInfo({
                 ...initialProduct,
-                expirationDate: dayjs().toDate(),
+                expiration_date: dayjs().toDate().toISOString(),
                 count: 1,
-                categoryId: 0,
+                category_id: 0,
                 name: '',
-                boxId: boxes[0].id,
-                shelfId: shelves[0].id
+                box_id: boxes[0].id,
+                shelf_id: shelves[0].id
             })
         }
     }, [product])
 
 
     const handleConfirm = () => {
-        onConfirm()
-        console.log('FIREEE: ', expirationDate);
+        const productWithISODate = {
+            ...productInfo,
+            expiration_date: expirationDate.toISOString()
+        };
+
+        console.log('productWithISODate: ', productWithISODate);
+        onConfirm(productWithISODate as Product);
     }
 
     console.log('productInfo: ', productInfo);
@@ -82,7 +92,7 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
                 </div>
                 :
                 <div className='flex  gap-2'>
-                    <div className='flex flex-col w-full'>
+                    <div className='flex flex-col w-full max-w-1/2'>
                         <span className='text-sm text-gray-500'>{intl.formatMessage({ id: 'product' })}</span>
                         <Select
                             showSearch={true}
@@ -91,11 +101,11 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
                             options={productsList.map(product => ({ value: product.name, label: product.name }))}
                             size='large'
                             className='w-full'
-                            defaultValue={productInfo.name}
-
+                            value={productInfo.name}
                             onChange={(value) => {
+                                //TODO: filter by id instead of name
                                 const product = productsList.find(product => product.name === value)
-                                setProductInfo({ ...productInfo, name: product?.name, categoryId: product?.categoryId, emoji: product?.emoji } as Product)
+                                setProductInfo({ ...productInfo, name: product?.name, category_id: product?.category_id || 0, emoji: product?.emoji } as Product)
                             }}
                             dropdownRender={(menu) => (
                                 <>
@@ -138,18 +148,30 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
                         />
                     </div>
 
-                    <div className='flex flex-col w-full'>
+                    <div className='flex flex-col w-1/2'>
                         <span className='text-sm text-gray-500'>{intl.formatMessage({ id: 'category' })}</span>
                         <Select
                             showSearch
+
                             placeholder={intl.formatMessage({ id: 'category.placeholder' })}
-                            options={categoriesOptions}
+                            options={categoriesList.map(category => ({ value: category.id, label: <span className='text-sm text-gray-500'>{category.emoji} {category.name}</span> }))}
                             size='large'
                             className='w-full'
+                            value={productInfo.category_id}
                             // defaultValue={productInfo.categoryId}
+                            // onSearch={(value) => {
+                            //     const category = categories.find(category => category.name.toLowerCase().includes(value.toLowerCase()))
+                            //     if (category) {
+                            //         console.log('category: ', category);
+                            //         setCategoriesList([category])
+                            //     }
+
+                            // }}
+                            //TODO: filter by id instead of name
                             onChange={(value) => {
-                                const category = categories.find(category => category.id === value)
-                                setProductInfo({ ...productInfo, categoryId: category?.id, name: category?.name, emoji: category?.emoji } as Product)
+                                console.log('value: ', value);
+                                const category = categoriesList.find(category => category.id === value)
+                                setProductInfo({ ...productInfo, category_id: category?.id, emoji: category?.emoji } as Product)
                             }}
                         />
                     </div>
@@ -164,15 +186,15 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
                 <DatePicker
                     className='w-full'
                     size='large'
-
                     defaultValue={dayjs(expirationDate, DATE_FORMAT)}
                     value={dayjs(expirationDate)}
                     format={DATE_FORMAT}
                     showTime={false}
                     onChange={(date) => {
                         if (date) {
-                            setExpirationDate(date.toDate());
-                            setProductInfo({ ...productInfo, expirationDate: date.toDate() } as Product)
+                            const newDate = date.toDate();
+                            setExpirationDate(newDate);
+                            setProductInfo({ ...productInfo, expirationDate: newDate.toISOString() } as Product)
                         }
                     }}
                 />

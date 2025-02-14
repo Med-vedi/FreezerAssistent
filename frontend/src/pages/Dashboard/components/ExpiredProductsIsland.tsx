@@ -28,7 +28,7 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
     useEffect(() => {
         setProductsWithExpirationDate(mproducts.map((product) => {
             if (product.id && product.id.length % 2 === 0) {
-                return { ...product, expirationDate: new Date() }
+                return { ...product, expirationDate: new Date().toISOString() }
             }
             return product
         }))
@@ -62,7 +62,7 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
                                 {product.emoji} {product.name}
                             </div>
                             <span className='text-sm text-gray-500'>
-                                {intl.formatDate(new Date(product.expirationDate!), {
+                                {intl.formatDate(new Date(product.expiration_date!), {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit'

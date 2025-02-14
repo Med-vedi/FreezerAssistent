@@ -90,7 +90,7 @@ const BoxDrawer = ({
                                         <div
                                             key={product.id}
                                             className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
-                                            onClick={() => setSelectedProduct(product as Product)}
+                                            onClick={() => setSelectedProduct(product as unknown as Product)}
                                         >
                                             <div className='flex items-center gap-2'>
                                                 <h1 className='text-xl m-0!'>{product.emoji}</h1>

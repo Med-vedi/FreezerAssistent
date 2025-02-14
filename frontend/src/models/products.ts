@@ -2,14 +2,13 @@ export interface Product {
     id: string;
     name: string;
     category: ProductCategory;
+    category_id: number;
     emoji: string;
     en: string;
     it: string;
-    expirationDate?: Date;
-
-    categoryId?: number;
-    boxId?: string;
-    shelfId?: string;
+    expiration_date?: string;
+    box_id?: string;
+    shelf_id?: string;
     count?: number;
 }
 
