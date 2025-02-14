@@ -23,7 +23,7 @@ const DashboardPage = () => {
 
 
     return (
-        <div className='flex flex-col gap-4'>
+        <div className='flex flex-col gap-4 pb-32'>
             <div className='flex flex-col md:flex-row gap-4'>
                 <BoxesIsland
                     selectedBoxId={selectedBoxId}

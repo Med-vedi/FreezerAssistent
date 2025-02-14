@@ -8,7 +8,7 @@ import { Product } from '@/models/products'
 import Input from 'antd/es/input'
 import { useState, useEffect } from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
-import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
+import { CloseOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import AddProductModal from './AddProductModal'
 
@@ -98,9 +98,16 @@ const BoxDrawer = ({
                                                 <p className='text-sm text-gray-500'>{product.count}</p>
                                             </div>
 
-                                            <div className='flex items-center gap-2 text-sm'>
+                                            <div className='flex items-center gap-2 text-sm mb-2'>
                                                 <FormattedMessage id="expirationDate" />: {product.expiring_date}
                                             </div>
+                                            <Button
+                                                danger
+                                                icon={<DeleteOutlined />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                }}
+                                            />
                                         </div>
                                     ))}
                                 </div>
