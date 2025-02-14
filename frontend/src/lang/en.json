@@ -32,5 +32,8 @@
     "shelf": "Shelf",
     "description": "Description",
     "description.placeholder": "Enter the product description",
-    "box": "Box"
+    "box": "Box",
+    "search": "Search",
+    "search.placeholder": "Search for a product",
+    "search.clear": "Clear"
 }

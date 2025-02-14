@@ -11,18 +11,10 @@ export interface Product {
 }
 
 export type ProductCategory =
-    | 'vini'
-    | 'liquori'
-    | 'caffetteria'
-    | 'latticini'
-    | 'base'
-    | 'pasta'
-    | 'riso'
-    | 'formaggi'
-    | 'salumi'
-    | 'verdure'
-    | 'erbe'
-    | 'pesce'
-    | 'zuppe'
-    | 'carni'
-    | 'pane';
+    | 'vini' | 'liquori' | 'caffetteria' | 'latticini' | 'base'
+    | 'pasta' | 'riso' | 'formaggi' | 'salumi' | 'verdure'
+    | 'erbe' | 'pesce' | 'zuppe' | 'carni' | 'pane'
+    | 'frozen' | 'pasta_fresca' | 'dolci' | 'sughi'
+    | 'piatti_pronti' | 'primi_pronti' | 'secondi_pronti' | 'contorni' | 'frutta'
+    | 'carne' | 'pane_da_forno' | 'insalate' | 'spreads' | 'cereali' | 'legumi'
+    | 'secondi' | 'street_food' | 'antipasti';

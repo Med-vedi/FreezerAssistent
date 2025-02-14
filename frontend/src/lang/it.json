@@ -32,5 +32,8 @@
     "shelf": "Scaffale",
     "description": "Descrizione",
     "description.placeholder": "Inserisci la descrizione del prodotto",
-    "box": "Box"
+    "box": "Box",
+    "search": "Cerca",
+    "search.placeholder": "Cerca un prodotto",
+    "search.clear": "Cancella"
 }

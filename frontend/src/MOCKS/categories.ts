@@ -20,5 +20,14 @@ export const categories = [
     { "id": 19, "name": "Zuppe", "emoji": "🥣", "en": "Soups", "it": "Zuppe" },
     { "id": 20, "name": "Primi Pronti", "emoji": "🍝", "en": "First Courses", "it": "Primi Pronti" },
     { "id": 21, "name": "Secondi Pronti", "emoji": "🍖", "en": "Main Dishes", "it": "Secondi Pronti" },
-    { "id": 22, "name": "Contorni", "emoji": "🥔", "en": "Side Dishes", "it": "Contorni" }
+    { "id": 22, "name": "Contorni", "emoji": "🥔", "en": "Side Dishes", "it": "Contorni" },
+    { "id": 23, "name": "Frutta", "emoji": "🍇", "en": "Fruits", "it": "Frutta" },
+    { "id": 24, "name": "Pesce", "emoji": "🐟", "en": "Fish", "it": "Pesce" },
+    { "id": 25, "name": "Carne", "emoji": "🥩", "en": "Meat", "it": "Carne" },
+    { "id": 26, "name": "Frozen", "emoji": "🥶", "en": "Frozen", "it": "Congelati" },
+    { "id": 27, "name": "Latticini", "emoji": "🥛", "en": "Dairy", "it": "Latticini" },
+    { "id": 28, "name": "Pasta", "emoji": "🍝", "en": "Pasta", "it": "Pasta" },
+    { "id": 29, "name": "Riso", "emoji": "🍚", "en": "Rice", "it": "Riso" },
+    { "id": 30, "name": "Formaggi", "emoji": "🧀", "en": "Cheeses", "it": "Formaggi" },
+    { "id": 31, "name": "Salumi", "emoji": "🥓", "en": "Cured Meats", "it": "Salumi" },
 ]
