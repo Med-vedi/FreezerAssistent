@@ -31,7 +31,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.listen(8000)
+// app.listen(8000)
 
 //USERS
 //Create user
