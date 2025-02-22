@@ -1,10 +1,9 @@
 require('dotenv').config();
 
-const config = require('./config.json');
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-mongoose.connect(config.connectionString, {
+mongoose.connect(process.env.MONGODB_URI, {
     dbName: 'freezer'
 });
 
