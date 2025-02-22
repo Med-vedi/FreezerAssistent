@@ -23,5 +23,10 @@ export const categories = [
     { "id": 21, "name": "Secondi Pronti", "emoji": "🍖", "en": "Main Dishes", "it": "Secondi Pronti" },
     { "id": 22, "name": "Contorni", "emoji": "🥔", "en": "Side Dishes", "it": "Contorni" },
     { "id": 23, "name": "Frutta", "emoji": "🍇", "en": "Fruits", "it": "Frutta" },
-    { "id": 24, "name": "Frozen", "emoji": "🥶", "en": "Frozen", "it": "Congelati" }
+    { "id": 24, "name": "Frozen", "emoji": "❄️", "en": "Frozen", "it": "Congelati" },
+    { "id": 25, "name": "Pasta Fresca", "emoji": "🍝", "en": "Fresh Pasta", "it": "Pasta Fresca" },
+    { "id": 26, "name": "Sughi", "emoji": "🥫", "en": "Sauces and Condiments", "it": "Sughi e Salse" },
+    { "id": 27, "name": "Piatti Pronti", "emoji": "🍽️", "en": "Ready Meals", "it": "Piatti Pronti" },
+    { "id": 28, "name": "Secondi", "emoji": "🍖", "en": "Main Dishes", "it": "Secondi" },
+
 ]
