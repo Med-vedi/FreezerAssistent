@@ -1,7 +1,8 @@
 [build]
-  command = "npm run build" # or your build command
-  publish = "dist" # or your build output directory
-  functions = "functions" # directory where your serverless functions live
+  base = "frontend"
+  command = "npm install && npm run build"
+  publish = "dist"
+  functions = "functions"
 
 [[redirects]]
   from = "/*"
