@@ -4,6 +4,11 @@ import Logo from '@/assets/icons/Logo'
 import { useBreakpoints } from '@/hooks/useBreakpoints'
 const Navbar = ({ title, showAvatar = true }: { title: string, showAvatar?: boolean }) => {
     const isDesktop = useBreakpoints().md
+
+    const onLogout = () => {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
     return (
         <div className="flex justify-between items-center px-6 py-4 shadow-md bg-white z-10">
             {isDesktop &&
@@ -21,12 +26,16 @@ const Navbar = ({ title, showAvatar = true }: { title: string, showAvatar?: bool
                     <Dropdown menu={{
                         items: [
                             {
-                                label: <span className="text-red-500">Logout</span>,
+                                label: <span
+                                    onClick={onLogout}
+                                    className="text-red-500">Logout</span>,
                                 key: 'logout'
                             }
                         ]
                     }}>
-                        <div className="cursor-pointer">
+                        <div
+
+                            className="cursor-pointer">
                             <Avatar name="John" lastName="Doe" />
                         </div>
                     </Dropdown>

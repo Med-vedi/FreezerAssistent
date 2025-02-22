@@ -1,11 +1,25 @@
-import { Form, Input, Button } from 'antd'
+import { Form, Input, Button, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
+import axiosInstance from '../utils/axiosInstance'
+import { AxiosError } from 'axios'
+
 const LoginPage = () => {
     const [form] = Form.useForm()
     const navigate = useNavigate()
-    const onFinish = (values: { username: string, password: string }) => {
-        console.log(values)
-        navigate('/dashboard')
+    const onFinish = async (values: { email: string, password: string }) => {
+        try {
+            const response = await axiosInstance.post('/login', values)
+            console.log('response:', response)
+            if (response.data && response.data.accessToken) {
+                localStorage.setItem('token', response.data.accessToken)
+                navigate('/dashboard')
+            }
+        } catch (error: unknown) {
+            if (error instanceof AxiosError && error.response?.data?.message) {
+                message.error(error.response.data.message)
+            }
+            console.log(error)
+        }
     }
     return (
         <div className="flex justify-center items-center h-full">

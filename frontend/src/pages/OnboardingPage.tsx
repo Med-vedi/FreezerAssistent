@@ -3,12 +3,27 @@ import Fridge from '@/assets/icons/Fridge';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { Button, Input } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '@/utils/axiosInstance';
 const OnboardingPage = () => {
     const intl = useIntl();
+    const [user, setUser] = useState<{
+        id: string;
+        name: string;
+        email: string;
+    } | null>(null);
+
+    useEffect(() => {
+        axiosInstance.get('/get-user').then((res) => {
+            setUser(res.data.user);
+        }).catch((err) => {
+            console.log(err);
+        });
+    }, []);
+
     const navigate = useNavigate();
     const [boxes, setBoxes] = useState<{ type: 'freezer' | 'fridge', title: string, id: string }[]>([
         {
@@ -37,7 +52,12 @@ const OnboardingPage = () => {
     }
     const onContinue = () => {
         console.log(boxes);
-        navigate('/dashboard');
+        axiosInstance.post('/user-ready', { email: user?.email }).then((res) => {
+            console.log(res);
+            navigate('/dashboard');
+        }).catch((err) => {
+            console.log(err);
+        });
     }
 
     return (
