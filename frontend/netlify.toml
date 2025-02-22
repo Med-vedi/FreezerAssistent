@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build" # or your build command
+  publish = "dist" # or your build output directory
+  functions = "functions" # directory where your serverless functions live
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  node_bundler = "esbuild"
