@@ -10,6 +10,15 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {
+      '@': '/src',
+      '@assets': '/src/assets',
+      '@components': '/src/components',
+      '@models': '/src/models',
+      '@utils': '/src/utils',
+      '@hooks': '/src/hooks',
+      '@pages': '/src/pages',
+      '@styles': '/src/styles',
+      '@contexts': '/src/contexts',
     },
   },
 })
