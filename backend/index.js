@@ -37,6 +37,7 @@ app.listen(8000)
 //Create user
 app.post('/users', async (req, res) => {
     const { name, email, password } = req.body;
+
     if (!name) {
         return res.status(400).json({ message: 'Name is required' });
     }
@@ -69,8 +70,9 @@ app.post('/users', async (req, res) => {
 });
 
 //Login user
-app.get('/login', async (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    console.log('FIREEEE!!!!')
     if (!email) {
         return res.status(400).json({ message: 'Email is required' });
     }
@@ -86,14 +88,15 @@ app.get('/login', async (req, res) => {
     }
 
     if (userInfo.email === email && userInfo.password === password) {
-        const accessToken = jwt.sign({ user: userInfo }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3600m' });
+        const accessToken = jwt.sign({ user: userInfo }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '36000m' });
         const refreshToken = jwt.sign({ user: userInfo }, process.env.REFRESH_TOKEN_SECRET);
         return res.json({
             error: false,
             email: userInfo.email,
             message: 'Login successful',
             accessToken,
-            refreshToken
+            refreshToken,
+            isReady: userInfo.isReady
         });
 
     } else {
@@ -102,6 +105,21 @@ app.get('/login', async (req, res) => {
             message: 'Invalid credentials'
         });
     }
+});
+
+//logout user
+app.post('/logout', async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+    }
+    user.tokens = [];
+    user.accessToken = null;
+    user.refreshToken = null;
+    localStorage.removeItem('token');
+    await user.save();
+    res.json({ message: 'Logout successful' });
 });
 
 //Get all users
@@ -129,6 +147,14 @@ app.get('/get-user', authenticateToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error fetching users', error: error.message });
     }
+});
+
+//user is ready
+app.post('/user-ready', authenticateToken, async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    user.isReady = true;
+    await user.save();
 });
 
 //Get user by id
