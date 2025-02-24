@@ -1,6 +1,6 @@
 import './App.css'
 import MainLayout from './layout/MainLayout'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/LoginPage'
 import SignUp from './pages/SignUpPage'
 import Dashboard from './pages/Dashboard/DashboardPage'
