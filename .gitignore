@@ -14,7 +14,21 @@ dist-ssr
 *.local
 .env
 build/
+
 backend/config.json
+backend/.env
+
+backend/node_modules
+
+backend/.vercel
+
+frontend/node_modules
+
+frontend/.env
+frontend/dist
+frontend/build
+frontend/node_modules
+
 
 # Editor directories and files
 .vscode/*
