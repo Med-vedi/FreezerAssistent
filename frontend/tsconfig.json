@@ -1,4 +1,8 @@
 {
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "strict": false
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
