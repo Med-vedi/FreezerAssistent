@@ -31,16 +31,16 @@ function App() {
     <Router>
       <MainLayout>
         <Routes>
+          <Route path="/" element={
+            <ProtectedRoute user={user}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
           <Route path={PATHS.LOGIN} element={<Login />} />
           <Route path={PATHS.SIGNUP} element={<SignUp />} />
           <Route path={PATHS.ONBOARDING} element={
             <ProtectedRoute user={user}>
               <Onboarding />
-            </ProtectedRoute>
-          } />
-          <Route path={PATHS.DASHBOARD} element={
-            <ProtectedRoute user={user}>
-              <Dashboard />
             </ProtectedRoute>
           } />
         </Routes>
