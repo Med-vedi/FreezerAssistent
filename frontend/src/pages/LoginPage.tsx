@@ -5,6 +5,8 @@ import { AxiosError } from 'axios'
 
 const LoginPage = () => {
     const [form] = Form.useForm()
+
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/login`)
     const navigate = useNavigate()
     const onFinish = async (values: { email: string, password: string }) => {
         try {

@@ -16,7 +16,7 @@ const Category = require('./models/categories.model');
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('./utils');
