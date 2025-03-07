@@ -23,8 +23,7 @@ const { authenticateToken } = require('./utils');
 
 app.use(express.json());
 app.use(cors({
-    // origin: 'http://localhost:5173',
-    origin: '*',
+    origin: ['http://localhost:5173', 'https://freezer-assist.netlify.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']

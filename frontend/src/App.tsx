@@ -1,4 +1,3 @@
-import './App.css';
 import MainLayout from './layout/MainLayout';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/LoginPage';
@@ -32,6 +31,11 @@ function App() {
       <MainLayout>
         <Routes>
           <Route path="/" element={
+            <ProtectedRoute user={user}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path={PATHS.DASHBOARD} element={
             <ProtectedRoute user={user}>
               <Dashboard />
             </ProtectedRoute>

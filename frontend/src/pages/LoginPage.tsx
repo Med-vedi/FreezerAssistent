@@ -2,11 +2,11 @@ import { Form, Input, Button, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
 import axiosInstance from '../utils/axiosInstance'
 import { AxiosError } from 'axios'
-
+import { BASE_URL } from '../utils/constants'
 const LoginPage = () => {
     const [form] = Form.useForm()
 
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/login`)
+    fetch(`${BASE_URL}/login`)
     const navigate = useNavigate()
     const onFinish = async (values: { email: string, password: string }) => {
         try {
