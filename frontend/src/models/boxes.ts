@@ -2,6 +2,6 @@ export interface Box {
     _id: { $oid: string };
     id: string;
     title: string;
-    shelves_id: string[];
+    shelves_ids: string[];
     type: 'freezer' | 'fridge';
 }

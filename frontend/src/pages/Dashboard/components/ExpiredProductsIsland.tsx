@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { FormattedMessage, useIntl } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import IslandLayout from '@/layout/IslandLayout'
 import { Input } from 'antd'
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
 import { Product } from '@/models/products'
 import { useDebounce } from '@/hooks/useDebounce'
 import { products } from '@/MOCKS/products'
+import dayjs from 'dayjs'
 
 const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handleProductClick: (product: Product) => void, selectedProduct: Product | null }) => {
-    const intl = useIntl()
-
     const mproducts = products as Product[]
     const [searchExpiredProducts, setSearchExpiredProducts] = useState<string>('')
     const [filteredProductsWithExpirationDate, setFilteredProductsWithExpirationDate] = useState<Product[]>([])
@@ -28,11 +27,23 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
     useEffect(() => {
         setProductsWithExpirationDate(mproducts.map((product) => {
             if (product.id && product.id.length % 2 === 0) {
-                return { ...product, expirationDate: new Date().toISOString() }
+                return { ...product, expiration_date: dayjs().format('YYYY-MM-DD') }
             }
             return product
         }))
     }, [mproducts])
+
+    const formatDate = (date: string | undefined) => {
+        if (!date) return '-';
+        try {
+            const parsedDate = dayjs(date);
+            if (!parsedDate.isValid()) return '-';
+            return parsedDate.format('DD/MM/YYYY');
+        } catch {
+            return '-';
+        }
+    }
+
     return (
         <IslandLayout>
             <div className='flex flex-col gap-4 w-full h-[360px] overflow-y-auto relative'>
@@ -48,12 +59,10 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
                         value={searchExpiredProducts}
                         onChange={(e) => setSearchExpiredProducts(e.target.value)}
                     />
-
                 </header>
                 <div className='flex flex-col gap-4'>
                     {filteredProductsWithExpirationDate.map((product) => (
                         <div
-
                             key={product.id}
                             className={`p-4 border-2  shadow-md bg-white rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex items-center justify-between gap-2 cursor-pointer`}
                             onClick={() => handleProductClick(product)}
@@ -62,11 +71,7 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
                                 {product.emoji} {product.name}
                             </div>
                             <span className='text-sm text-gray-500'>
-                                {intl.formatDate(new Date(product.expiration_date!), {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit'
-                                })}
+                                {formatDate(product.expiration_date)}
                             </span>
                         </div>
                     ))}

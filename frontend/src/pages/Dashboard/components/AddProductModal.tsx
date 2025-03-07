@@ -3,12 +3,21 @@ import { Modal } from 'antd'
 import React from 'react'
 import ProductDrawerCard from './ProductDrawerCard'
 import { useIntl } from 'react-intl'
-
-const AddProductModal = ({ open, onCancel, product }: { open: boolean, onCancel: () => void, product?: Product }) => {
+interface AddProductModalProps {
+    open: boolean
+    onCancel: () => void
+    product?: Product
+}
+const AddProductModal = ({
+    open,
+    onCancel,
+    product,
+}: AddProductModalProps) => {
     const intl = useIntl()
 
-    const handleConfirm = () => {
-        onCancel()
+    const handleConfirm = (product: Product) => {
+        // onCancel()
+        console.log('product: ', product)
     }
 
     return (

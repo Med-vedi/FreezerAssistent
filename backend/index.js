@@ -2,6 +2,10 @@ require('dotenv').config();
 
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
+const express = require('express');
+const app = express();
+const cors = require('cors');
+const port = process.env.PORT || 8080;
 
 mongoose.connect(process.env.MONGODB_URI, {
     dbName: 'freezer'
@@ -13,21 +17,18 @@ const Product = require('./models/products.model');
 const Shelf = require('./models/shelves.model');
 const Category = require('./models/categories.model');
 
-const express = require('express');
-const app = express();
-const cors = require('cors');
-const port = process?.env?.PORT || 8080;
-
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('./utils');
 
-app.use(express.json());
+// CORS configuration
 app.use(cors({
     origin: ['http://localhost:5173', 'https://freezer-assist.netlify.app'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
+
+app.use(express.json());
 
 // app.listen(8000)
 
@@ -70,7 +71,6 @@ app.post('/users', async (req, res) => {
 //Login user
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    console.log('FIREEEE!!!!')
     if (!email) {
         return res.status(400).json({ message: 'Email is required' });
     }
@@ -94,7 +94,8 @@ app.post('/login', async (req, res) => {
             message: 'Login successful',
             accessToken,
             refreshToken,
-            isReady: userInfo.isReady
+            isReady: userInfo.isReady,
+            user_id: userInfo.id
         });
 
     } else {
@@ -153,6 +154,7 @@ app.post('/user-ready', authenticateToken, async (req, res) => {
     const user = await User.findOne({ email });
     user.isReady = true;
     await user.save();
+    res.json({ message: 'User is ready' });
 });
 
 //Get user by id
@@ -173,39 +175,47 @@ app.put('/users/:id', authenticateToken, async (req, res) => {
 });
 
 //BOXES
-app.post('/boxes', authenticateToken, async (req, res) => {
-    const boxes = req.body;
-    console.log(boxes);
+//Create box
+app.post('/boxes/user', authenticateToken, async (req, res) => {
+    const { boxes } = req.body;
 
-    const shelves_ids = () => {
-        return Array(5).fill().map(() => uuidv4());
-    };
     if (!boxes || !Array.isArray(boxes) || boxes.length < 1) {
         return res.status(400).json({ message: 'Valid boxes array is required' });
     }
 
     try {
-        const savedBoxes = await Box.insertMany(boxes.map(box => ({
-            id: uuidv4() + box.title,
-            title: box.title,
-            shelves_id: shelves_ids(),
-            type: box.type
-        })));
+        // Create boxes first
+        const savedBoxes = await Box.insertMany(boxes);
 
+        // Create shelves for each box
+        const shelvesToCreate = boxes.flatMap(box =>
+            box.shelves_ids.map((shelfId, index) => ({
+                id: shelfId,
+                level: String(index),
+                box_id: box.id,
+                products: []
+            }))
+        );
+
+        // Create all shelves
+        await Shelf.insertMany(shelvesToCreate);
+
+        console.log('Created boxes with shelves:', savedBoxes);
         res.json(savedBoxes);
     } catch (error) {
+        console.error('Error creating boxes:', error);
         res.status(500).json({ message: 'Error creating boxes', error: error.message });
     }
 });
 
-//Get boxes list
-app.get('/boxes', authenticateToken, async (req, res) => {
+//Get boxes list by user_id
+app.get('/boxes/user', authenticateToken, async (req, res) => {
     try {
-        const { id } = req.query;
+        const { user_id } = req.query;
         const query = {};
 
-        if (id) {
-            query.id = id;
+        if (user_id) {
+            query.user_id = user_id;
         }
 
         const boxes = await Box.find(query);
@@ -216,13 +226,13 @@ app.get('/boxes', authenticateToken, async (req, res) => {
 });
 
 //update boxes list
-app.patch('/boxes/:id', authenticateToken, async (req, res) => {
+app.patch('/boxes/user/:id', authenticateToken, async (req, res) => {
     try {
         const box = await Box.findOneAndUpdate(
             { id: req.params.id },
             {
                 title: req.body.title,
-                shelves_id: req.body.shelves_id
+                shelves_ids: req.body.shelves_ids
             },
             { new: true });
         res.json(box);
@@ -231,20 +241,53 @@ app.patch('/boxes/:id', authenticateToken, async (req, res) => {
     }
 });
 
-app.delete('/boxes/:id', authenticateToken, async (req, res) => {
+// Delete box and its related data
+app.delete('/boxes/user/:id', authenticateToken, async (req, res) => {
     try {
-        await Box.findOneAndDelete({ id: req.params.id });
-        res.json({ message: 'Box deleted successfully' });
+        const { id } = req.params;
+        const { user_id } = req.query;
+
+        // Find the box first to get shelf IDs
+        const box = await Box.findOne({ user_id, id });
+        if (!box) {
+            return res.status(404).json({ message: 'Box not found' });
+        }
+
+        // Delete all shelves associated with this box
+        if (box.shelves_ids && box.shelves_ids.length > 0) {
+            // Find all shelves to get their product IDs
+            const shelves = await Shelf.find({ id: { $in: box.shelves_ids } });
+
+            // Remove product references from shelves
+            for (const shelf of shelves) {
+                if (shelf.products && shelf.products.length > 0) {
+                    await Product.updateMany(
+                        { id: { $in: shelf.products } },
+                        { $unset: { shelf_id: "", box_id: "" } }
+                    );
+                }
+            }
+
+            // Delete all shelves
+            await Shelf.deleteMany({ id: { $in: box.shelves_ids } });
+        }
+
+        // Finally delete the box
+        await Box.findOneAndDelete({ user_id, id });
+
+        res.json({ message: 'Box and related data deleted successfully' });
     } catch (error) {
+        console.error('Error deleting box:', error);
         res.status(500).json({ message: 'Error deleting box', error: error.message });
     }
 });
 
 //PRODUCTS
-//Create product
+//Create or add product
 app.post('/products', authenticateToken, async (req, res) => {
+    const productId = uuidv4();
     const product = {
-        id: uuidv4(),
+        id: productId,
         category_id: req.body?.category_id || 0,
         emoji: req.body?.emoji || '❄️',
         ...req.body
@@ -287,26 +330,21 @@ app.get('/products', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Error fetching products', error: error.message });
     }
 });
-//add product
-app.post('/products', authenticateToken, async (req, res) => {
-    const productId = uuidv4();
-    const product = {
-        id: productId,
-        ...req.body
-    };
+
+//delete product from shelf
+app.delete('/products/:productId/shelf/:shelfId', authenticateToken, async (req, res) => {
+    const { productId, shelfId } = req.params;
     try {
-        //if product is not from the list of the products, create it
-        const isProductExists = await Product.findOne({ id: productId });
-        if (isProductExists) {
-            return res.status(400).json({ message: 'Product already exists' });
-        }
-        const savedProduct = await Product.create(product);
-        res.json(savedProduct);
+        // Find the shelf and remove the product from its products array
+        await Shelf.findOneAndUpdate(
+            { id: shelfId },
+            { $pull: { products: productId } }
+        );
+        res.json({ message: 'Product removed from shelf successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating product', error: error.message });
+        res.status(500).json({ message: 'Error removing product from shelf', error: error.message });
     }
 });
-//
 
 //SHELVES
 //Create shelf
@@ -336,10 +374,10 @@ app.post('/shelves', authenticateToken, async (req, res) => {
 
         const savedShelf = await Shelf.create(shelf);
 
-        // Update the box's shelves_id array
+        // Update the box's shelves_ids array
         await Box.findOneAndUpdate(
             { id: req.body.box_id },
-            { $push: { shelves_id: shelfId } }
+            { $push: { shelves_ids: shelfId } }
         );
 
         res.json(savedShelf);
@@ -379,10 +417,10 @@ app.delete('/shelves/:shelfId', authenticateToken, async (req, res) => {
         // Delete the shelf
         await Shelf.findOneAndDelete({ id: req.params.shelfId });
 
-        // Remove shelf ID from the box's shelves_id array
+        // Remove shelf ID from the box's shelves_ids array
         await Box.findOneAndUpdate(
             { id: shelfToDelete.box_id },
-            { $pull: { shelves_id: req.params.shelfId } }
+            { $pull: { shelves_ids: req.params.shelfId } }
         );
 
         // Recalculate levels for remaining shelves in the box
@@ -421,9 +459,9 @@ app.get('/categories', authenticateToken, async (req, res) => {
     }
 });
 
-
-
-
+const shelves_ids = () => {
+    return Array.from({ length: 5 }, () => uuidv4());
+};
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);

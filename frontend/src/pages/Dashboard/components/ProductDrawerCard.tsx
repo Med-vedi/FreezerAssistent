@@ -1,72 +1,128 @@
 import { Product } from '@/models/products';
 import { MinusOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space, Spin } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useIntl } from 'react-intl';
 import { DATE_FORMAT } from '@/constants';
-import { boxes } from '@/MOCKS/boxes';
 import Freezer from '@/assets/icons/Freezer';
 import Fridge from '@/assets/icons/Fridge';
-import { shelves } from '@/MOCKS/shelves';
+
+// import { boxes } from '@/MOCKS/boxes';
+// import { shelves } from '@/MOCKS/shelves';
+
 import { products } from '@/MOCKS/products';
 import { categories } from '@/MOCKS/categories';
 import { Category } from '@/models/categories';
-const initialProduct: Partial<Product> = {
-    id: new Date().getTime().toString(),
-    name: '',
-    category: 'altro',
-    expiration_date: new Date().toISOString(),
-    count: 0
+
+import { Box } from '@/models/boxes';
+import { Shelf } from '@/models/shelves';
+import axiosInstance from '@/utils/axiosInstance';
+import { useAuth } from '@/context/AuthContext';
+import { useDashboard } from '@/context/DashboardContext';
+interface ProductDrawerCardProps {
+    product?: Product
+    onConfirm: (product: Product) => void
 }
-const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfirm: (product: Product) => void }) => {
+
+const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
+    const { user } = useAuth()
+    const { selectedBoxId } = useDashboard()
+
+    const initialProduct: Partial<Product> = {
+        id: new Date().getTime().toString(),
+        name: '',
+        category: 'altro',
+        expiration_date: new Date().toISOString(),
+        count: 0,
+        ...product
+    }
     const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
     const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct)
     const [productsList, setProductsList] = useState<Product[]>(products)
     const [categoriesList, setCategoriesList] = useState<Category[]>(categories)
     const [newProductName, setNewProductName] = useState('')
+    const [boxes, setBoxes] = useState<Box[]>([])
+    const [shelves, setShelves] = useState<Shelf[]>([])
+    const [boxesLoading, setBoxesLoading] = useState(false)
+    const [shelvesLoading, setShelvesLoading] = useState(false)
 
-    console.log('productInfo: ', productInfo);
     const intl = useIntl();
     const inputRef = useRef<InputRef>(null);
 
 
-    const mboxes = boxes.map(box => ({
-        value: box.id, label: <div className='flex items-center gap-2'>
+    const mboxes = useMemo(() => boxes.map(box => ({
+        value: box.id,
+        label: <div className='flex items-center gap-2'>
             <div className='w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center'>
                 {box.type === 'fridge' ? <Fridge size={16} /> : box.type === 'freezer' ? <Freezer size={16} /> : <Fridge size={16} />}
             </div>
             <span>{box.title}</span>
         </div>
-    }))
+    })), [boxes])
 
+    const getBoxes = async () => {
+        try {
+            setBoxesLoading(true)
+            const response = await axiosInstance.get<Box[]>(`/boxes/user?user_id=${user?.id}`)
+            setBoxes(response.data)
+        } catch (error) {
+            console.error('Error fetching boxes:', error)
+        } finally {
+            setBoxesLoading(false)
+        }
+    }
+
+    const getShelves = async () => {
+        try {
+            setShelvesLoading(true)
+            const response = await axiosInstance.get<Shelf[]>('/shelves')
+            setShelves(response.data)
+        } catch (error) {
+            console.error('Error fetching shelves:', error)
+        } finally {
+            setShelvesLoading(false)
+        }
+    }
     useEffect(() => {
         setCategoriesList(categories)
     }, [categories])
 
     useEffect(() => {
-        if (product) {
+        if (product && boxes.length > 0 && shelves.length > 0) {
             setProductInfo({
                 ...product,
                 expiration_date: product.expiration_date,
                 count: product.count || 0,
                 category_id: product.category_id || 0,
                 name: product.name || '',
-                box_id: product.box_id || boxes[0].id,
+                box_id: product.box_id || selectedBoxId || boxes[0].id,
                 shelf_id: product.shelf_id || shelves[0].id
             })
-        } else {
+        }
+
+        if (!product && boxes.length > 0 && shelves.length > 0) {
             setProductInfo({
                 ...initialProduct,
                 expiration_date: dayjs().toDate().toISOString(),
                 count: 1,
                 category_id: 0,
                 name: '',
-                box_id: boxes[0].id,
+                box_id: selectedBoxId || boxes[0].id,
                 shelf_id: shelves[0].id
             })
         }
-    }, [product])
+    }, [product, boxes, shelves])
+
+    useEffect(() => {
+        setBoxes(boxes)
+        setShelves(shelves)
+    }, [boxes, shelves])
+
+    useEffect(() => {
+        getBoxes()
+        getShelves()
+    }, [])
 
 
     const handleConfirm = () => {
@@ -74,12 +130,16 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
             ...productInfo,
             expiration_date: expirationDate.toISOString()
         };
-
-        console.log('productWithISODate: ', productWithISODate);
         onConfirm(productWithISODate as Product);
     }
 
-    console.log('productInfo: ', productInfo);
+    if (boxesLoading || shelvesLoading) {
+        return <div className='flex justify-center items-center h-full'>
+            <Spin size='large' />
+        </div>
+    }
+
+
     return (
         <div className='flex flex-col gap-4 mt-4'>
             {product ?
@@ -258,7 +318,7 @@ const ProductDrawerCard = ({ product, onConfirm }: { product?: Product, onConfir
                         options={mboxes}
                         size='large'
                         className='w-full'
-                        defaultValue={mboxes[0].value}
+                        value={productInfo.box_id}
                         style={{ width: '100%' }}
                         onChange={(value) => {
                             const box = boxes.find(box => box.id === value)

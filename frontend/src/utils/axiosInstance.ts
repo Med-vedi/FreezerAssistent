@@ -4,6 +4,7 @@ import axios, { InternalAxiosRequestConfig } from 'axios';
 const axiosInstance = axios.create({
     baseURL: BASE_URL,
     timeout: 10000,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -28,6 +29,11 @@ axiosInstance.interceptors.response.use(
         if (error.response) {
             // Server responded with error status
             console.error('Response error:', error.response.status, error.response.data);
+            if (error.response.status === 401) {
+                // Handle unauthorized access
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
         } else if (error.request) {
             // Request was made but no response received
             console.error('Request error:', error.request);

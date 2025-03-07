@@ -42,5 +42,7 @@
     "product.error": "The product is required",
     "search": "Search",
     "search.placeholder": "Search for a product",
-    "search.clear": "Clear"
+    "search.clear": "Clear",
+    "noShelves": "No shelves found",
+    "addProduct": "Add product"
 }

@@ -3,38 +3,36 @@ import Fridge from '@/assets/icons/Fridge';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { Button, Input } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/utils/axiosInstance';
+import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/context/AuthContext';
+
 const OnboardingPage = () => {
     const intl = useIntl();
-    const [user, setUser] = useState<{
-        id: string;
-        name: string;
-        email: string;
-    } | null>(null);
-
-    useEffect(() => {
-        axiosInstance.get('/get-user').then((res) => {
-            setUser(res.data.user);
-        }).catch((err) => {
-            console.log(err);
-        });
-    }, []);
+    const { user } = useAuth();
 
     const navigate = useNavigate();
-    const [boxes, setBoxes] = useState<{ type: 'freezer' | 'fridge', title: string, id: string }[]>([
+
+    const shelvesRandomIds = Array.from({ length: 5 }, () => uuidv4());
+
+    const [boxes, setBoxes] = useState<{ type: 'freezer' | 'fridge', title: string, id: string, shelves_ids: string[], user_id: string }[]>([
         {
             type: 'freezer',
             title: `${intl.formatMessage({ id: 'freezer' })} #1`,
-            id: 'freezer-1'
+            id: uuidv4() + '__freezer',
+            shelves_ids: shelvesRandomIds,
+            user_id: user?.id || ''
         },
         {
             type: 'fridge',
             title: `${intl.formatMessage({ id: 'fridge' })} #1`,
-            id: 'fridge-1'
+            id: uuidv4() + '__fridge',
+            shelves_ids: shelvesRandomIds,
+            user_id: user?.id || ''
         },
     ]);
 
@@ -43,18 +41,41 @@ const OnboardingPage = () => {
     }
     const onAdd = (type: string) => {
         const idxByType = boxes.filter(b => b.type === type).length;
-        const next = [...boxes, { type: type as 'freezer' | 'fridge', title: `${intl.formatMessage({ id: type })} #${idxByType + 1}`, id: `${type}-${idxByType + 1}` }]
+        const next = [...boxes, {
+            type: type as 'freezer' | 'fridge',
+            title: `${intl.formatMessage({ id: type })} #${idxByType + 1}`,
+            id: `${type}-${idxByType + 1 + new Date().getTime().toString()}`,
+            shelves_ids: shelvesRandomIds,
+            user_id: user?.id || ''
+        }];
         const sortedByType = next.sort((a, b) => a.type.localeCompare(b.type));
         setBoxes(sortedByType);
     }
     const onRemove = (id: string) => {
         setBoxes(boxes.filter((b) => b.id !== id));
     }
+    const createBoxes = async () => {
+
+        if (!user) return;
+        const payload = {
+            boxes,
+            user_id: user.id
+        }
+        try {
+            const res = await axiosInstance.post('/boxes/user', payload);
+            if (res.status === 200) {
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
     const onContinue = () => {
-        console.log(boxes);
         axiosInstance.post('/user-ready', { email: user?.email }).then((res) => {
-            console.log(res);
-            navigate('/dashboard');
+            if (res.status === 200) {
+                createBoxes();
+            }
         }).catch((err) => {
             console.log(err);
         });

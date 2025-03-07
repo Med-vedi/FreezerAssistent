@@ -1,12 +1,13 @@
 import { Button, Form, Input } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-
+import { useAuth } from '../context/AuthContext'
 const SignUpPage = () => {
     const [form] = Form.useForm()
+    const { register } = useAuth()
     const navigate = useNavigate()
-    const onFinish = (values: { username: string, password: string }) => {
-        console.log(values)
-        navigate('/dashboard')
+    const onFinish = async (values: { username: string, password: string, email: string }) => {
+        await register(values.username, values.email, values.password)
+        navigate('/onboarding')
     }
     return (
         <div className="flex justify-center items-center h-full">

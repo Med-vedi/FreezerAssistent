@@ -43,5 +43,7 @@
     "product.error": "Il prodotto è obbligatorio",
     "search": "Cerca",
     "search.placeholder": "Cerca un prodotto",
-    "search.clear": "Cancella"
+    "search.clear": "Cancella",
+    "noShelves": "Nessun scaffale trovato",
+    "addProduct": "Aggiungi prodotto"
 }

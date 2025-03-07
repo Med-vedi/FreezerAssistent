@@ -1,21 +1,16 @@
 import { Form, Input, Button, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-import axiosInstance from '../utils/axiosInstance'
 import { AxiosError } from 'axios'
-import { BASE_URL } from '../utils/constants'
+import { useAuth } from '../context/AuthContext'
+
 const LoginPage = () => {
     const [form] = Form.useForm()
-
-    fetch(`${BASE_URL}/login`)
+    const { login } = useAuth()
     const navigate = useNavigate()
     const onFinish = async (values: { email: string, password: string }) => {
         try {
-            const response = await axiosInstance.post('/login', values)
-            console.log('response:', response)
-            if (response.data && response.data.accessToken) {
-                localStorage.setItem('token', response.data.accessToken)
-                navigate('/dashboard')
-            }
+            await login(values.email, values.password)
+            navigate('/dashboard')
         } catch (error: unknown) {
             if (error instanceof AxiosError && error.response?.data?.message) {
                 message.error(error.response.data.message)
