@@ -10,6 +10,7 @@ const axiosInstance = axios.create({
         'Accept': 'application/json'
     },
 });
+console.log(BASE_URL);
 
 axiosInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {

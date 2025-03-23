@@ -5,7 +5,7 @@ import SignUp from './pages/SignUpPage';
 import Dashboard from './pages/Dashboard/DashboardPage';
 import { PATHS } from './constants/paths';
 import Onboarding from './pages/OnboardingPage';
-import axiosInstance from './utils/axiosInstance';
+import { useAuth } from './context/AuthContext';
 import { useState, useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
 
@@ -16,14 +16,14 @@ function App() {
     email: string;
     isReady: boolean;
   } | null>(null);
+  const { checkAuth } = useAuth();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
-
-    axiosInstance.get('/get-user')
-      .then((res) => setUser(res.data.user))
-      .catch((err) => console.error(err));
+    if (!token) {
+      checkAuth().then((user) => setUser(user));
+      return;
+    }
   }, []);
 
   return (

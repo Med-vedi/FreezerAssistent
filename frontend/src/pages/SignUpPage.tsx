@@ -18,7 +18,7 @@ const SignUpPage = () => {
                 className="w-[90%] max-w-[400px] mx-auto bg-white rounded-lg border border-gray-200 p-6! shadow-md "
             >
                 <Form.Item
-                    name="name"
+                    name="username"
                     label="Name"
                     rules={[
                         { required: true, message: 'Please input your name!' },

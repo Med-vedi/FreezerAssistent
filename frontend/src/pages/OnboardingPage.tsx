@@ -71,15 +71,20 @@ const OnboardingPage = () => {
         }
     }
 
-    const onContinue = () => {
-        axiosInstance.post('/user-ready', { email: user?.email }).then((res) => {
+    const onContinue = async () => {
+        console.log('user', user)
+        if (!user) return;
+        try {
+            const res = await axiosInstance.post('/user-ready', { email: user?.email })
+            console.log('res', res)
             if (res.status === 200) {
                 createBoxes();
             }
-        }).catch((err) => {
+        } catch (err) {
             console.log(err);
-        });
+        }
     }
+
 
     return (
         <div className="h-full flex flex-col">

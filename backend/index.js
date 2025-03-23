@@ -54,7 +54,8 @@ app.post('/users', async (req, res) => {
         name,
         email,
         password,
-        id: uuidv4()
+        id: uuidv4(),
+        isReady: false
     });
     await user.save();
     const accessToken = jwt.sign({ id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3600m' });
@@ -64,7 +65,12 @@ app.post('/users', async (req, res) => {
         message: 'User created successfully',
         accessToken,
         refreshToken,
-        user
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            isReady: user.isReady
+        }
     });
 });
 
@@ -90,12 +96,15 @@ app.post('/login', async (req, res) => {
         const refreshToken = jwt.sign({ user: userInfo }, process.env.REFRESH_TOKEN_SECRET);
         return res.json({
             error: false,
-            email: userInfo.email,
             message: 'Login successful',
             accessToken,
             refreshToken,
-            isReady: userInfo.isReady,
-            user_id: userInfo.id
+            user: {
+                id: userInfo.id,
+                name: userInfo.name,
+                email: userInfo.email,
+                isReady: userInfo.isReady
+            }
         });
 
     } else {
@@ -140,6 +149,7 @@ app.get('/get-user', authenticateToken, async (req, res) => {
                 id: userData.id,
                 name: userData.name,
                 email: userData.email,
+                isReady: userData.isReady
             },
             message: 'User fetched successfully'
         });
@@ -150,11 +160,28 @@ app.get('/get-user', authenticateToken, async (req, res) => {
 
 //user is ready
 app.post('/user-ready', authenticateToken, async (req, res) => {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    user.isReady = true;
-    await user.save();
-    res.json({ message: 'User is ready' });
+    console.log('email', req)
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.isReady = true;
+        await user.save();
+        res.json({
+            message: 'User is ready', user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                isReady: user.isReady
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user', error: error.message });
+    }
 });
 
 //Get user by id

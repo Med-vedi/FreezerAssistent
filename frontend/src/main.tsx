@@ -12,12 +12,12 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Suspense fallback={<div>Loading...</div>}>
       <IntlConfig>
-        <AuthProvider>
+        <AuthProvider >
           <ConfigProvider theme={theme}>
             <App />
           </ConfigProvider>
         </AuthProvider>
       </IntlConfig>
     </Suspense>
-  </StrictMode>,
+  </StrictMode>
 )

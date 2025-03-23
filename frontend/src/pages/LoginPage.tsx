@@ -7,10 +7,16 @@ const LoginPage = () => {
     const [form] = Form.useForm()
     const { login } = useAuth()
     const navigate = useNavigate()
+
     const onFinish = async (values: { email: string, password: string }) => {
         try {
-            await login(values.email, values.password)
-            navigate('/dashboard')
+            const user = await login(values.email, values.password)
+            if (user?.isReady) {
+                console.log('user', user)
+                navigate('/dashboard')
+            } else {
+                navigate('/onboarding')
+            }
         } catch (error: unknown) {
             if (error instanceof AxiosError && error.response?.data?.message) {
                 message.error(error.response.data.message)
