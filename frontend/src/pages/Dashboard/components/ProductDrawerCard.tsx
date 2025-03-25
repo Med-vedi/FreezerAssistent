@@ -23,19 +23,24 @@ import { useDashboard } from '@/context/DashboardContext';
 interface ProductDrawerCardProps {
     product?: Product
     onConfirm: (product: Product) => void
+    shelfId?: string
+    boxId?: string
 }
 
-const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
+const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawerCardProps) => {
     const { user } = useAuth()
     const { selectedBoxId } = useDashboard()
 
     const initialProduct: Partial<Product> = {
+        ...product,
         id: new Date().getTime().toString(),
         name: '',
         category: 'altro',
         expiration_date: new Date().toISOString(),
         count: 0,
-        ...product
+        box_id: boxId,
+        shelf_id: shelfId || product?.shelf_id || '',
+        notes: product?.notes || ''
     }
     const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
     const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct)
@@ -76,7 +81,7 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
     const getShelves = async () => {
         try {
             setShelvesLoading(true)
-            const response = await axiosInstance.get<Shelf[]>('/shelves')
+            const response = await axiosInstance.get<Shelf[]>(`/shelves?box_id=${boxId}`)
             setShelves(response.data)
         } catch (error) {
             console.error('Error fetching shelves:', error)
@@ -89,15 +94,17 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
     }, [categories])
 
     useEffect(() => {
+        console.log('product', product)
         if (product && boxes.length > 0 && shelves.length > 0) {
             setProductInfo({
                 ...product,
                 expiration_date: product.expiration_date,
                 count: product.count || 0,
+                category: product.category || 'altro',
                 category_id: product.category_id || 0,
                 name: product.name || '',
                 box_id: product.box_id || selectedBoxId || boxes[0].id,
-                shelf_id: product.shelf_id || shelves[0].id
+                shelf_id: product.shelf_id || shelfId || shelves[0].id
             })
         }
 
@@ -106,13 +113,14 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
                 ...initialProduct,
                 expiration_date: dayjs().toDate().toISOString(),
                 count: 1,
+                category: 'altro',
                 category_id: 0,
                 name: '',
                 box_id: selectedBoxId || boxes[0].id,
-                shelf_id: shelves[0].id
+                shelf_id: shelfId || shelves[0].id
             })
         }
-    }, [product, boxes, shelves])
+    }, [product, boxes, shelves, shelfId])
 
     useEffect(() => {
         setBoxes(boxes)
@@ -126,9 +134,20 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
 
 
     const handleConfirm = () => {
+        const categoryName = categoriesList.find(category => category.id === productInfo.category_id)?.name
+
         const productWithISODate = {
-            ...productInfo,
-            expiration_date: expirationDate.toISOString()
+            expiration_date: expirationDate.toISOString(),
+            notes: productInfo?.notes || '',
+            box_id: productInfo?.box_id || '',
+            shelf_id: productInfo?.shelf_id || '',
+            count: productInfo?.count || 1,
+            name: productInfo?.name || '',
+            category: categoryName || 'altro',
+            category_id: productInfo?.category_id || 0,
+            emoji: productInfo?.emoji || '🍽️',
+            en: productInfo?.name || '',
+            it: productInfo?.name || ''
         };
         onConfirm(productWithISODate as Product);
     }
@@ -138,6 +157,7 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
             <Spin size='large' />
         </div>
     }
+    console.log('shelves', shelves)
 
 
     return (
@@ -229,9 +249,8 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
                             // }}
                             //TODO: filter by id instead of name
                             onChange={(value) => {
-                                console.log('value: ', value);
                                 const category = categoriesList.find(category => category.id === value)
-                                setProductInfo({ ...productInfo, category_id: category?.id, emoji: category?.emoji } as Product)
+                                setProductInfo({ ...productInfo, category_id: category?.id, emoji: category?.emoji, category: category?.name } as Product)
                             }}
                         />
                     </div>
@@ -274,8 +293,6 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
                         className='w-full'
                         style={{ width: '100%' }}
                     />
-
-
                     <Button
                         size='large'
                         onClick={() => {
@@ -301,10 +318,10 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
                 <div className='flex w-full flex-col'>
                     <span className='text-sm text-gray-500'>{intl.formatMessage({ id: 'shelf' })}</span>
                     <Select
-                        options={[1, 2, 3, 4, 5, 6].map(num => ({ value: num, label: num }))}
+                        options={shelves.map(shelf => ({ value: shelf.id, label: shelf.level }))}
                         size='large'
                         className='w-full z-0'
-                        defaultValue={1}
+                        defaultValue={shelfId}
                         style={{ width: '100%', zIndex: '0 !important' }}
                         onChange={(value) => {
                             const shelf = shelves.find(shelf => shelf.id === value.toString())
@@ -328,19 +345,15 @@ const ProductDrawerCard = ({ product, onConfirm }: ProductDrawerCardProps) => {
                 </div>
             </div>
 
-
             <div className='flex flex-col'>
                 <span className='text-sm text-gray-500'>{intl.formatMessage({ id: 'description' })}</span>
                 <Input.TextArea
                     rows={4}
                     placeholder={intl.formatMessage({ id: 'description.placeholder' })}
-                    // value={productInfo?.description}
-                    onChange={(e) => setProductInfo({ ...productInfo, description: e.target.value } as Product)}
+                    value={productInfo?.notes}
+                    onChange={(e) => setProductInfo({ ...productInfo, notes: e.target.value } as Product)}
                 />
             </div>
-
-
-
 
             <footer className='flex items-center gap-2 mt-8'>
                 <Button

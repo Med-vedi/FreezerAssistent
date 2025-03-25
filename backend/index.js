@@ -160,7 +160,6 @@ app.get('/get-user', authenticateToken, async (req, res) => {
 
 //user is ready
 app.post('/user-ready', authenticateToken, async (req, res) => {
-    console.log('email', req)
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -226,8 +225,6 @@ app.post('/boxes/user', authenticateToken, async (req, res) => {
 
         // Create all shelves
         await Shelf.insertMany(shelvesToCreate);
-
-        console.log('Created boxes with shelves:', savedBoxes);
         res.json(savedBoxes);
     } catch (error) {
         console.error('Error creating boxes:', error);
@@ -310,30 +307,71 @@ app.delete('/boxes/user/:id', authenticateToken, async (req, res) => {
 });
 
 //PRODUCTS
-//Create or add product
+//Create product
 app.post('/products', authenticateToken, async (req, res) => {
-    const productId = uuidv4();
-    const product = {
-        id: productId,
-        category_id: req.body?.category_id || 0,
-        emoji: req.body?.emoji || '❄️',
-        ...req.body
-    };
-
     try {
+        const productId = uuidv4();
+        const product = {
+            id: productId,
+            user_id: req.user.user.id,
+            category_id: req.body?.category_id || 0,
+            emoji: req.body?.emoji || '❄️',
+            name: req.body.name,
+            count: req.body.count || 1,
+            ...req.body
+        };
+
         const savedProduct = await Product.create(product);
-
-        // If shelf_id is provided, update the shelf's products array
-        if (req.body.shelf_id) {
-            await Shelf.findOneAndUpdate(
-                { id: req.body.shelf_id },
-                { $push: { products: savedProduct.id } }
-            );
-        }
-
         res.json(savedProduct);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating product', error: error.message });
+        console.error('Product creation error:', error);
+        res.status(500).json({
+            message: 'Error creating product',
+            error: error.message
+        });
+    }
+});
+//add product to shelf
+app.post('/products/shelf', authenticateToken, async (req, res) => {
+    try {
+        const { shelf_id, box_id } = req.body;
+        const shelf = await Shelf.findOne({
+            $or: [
+                { id: shelf_id },
+                { box_id: box_id }
+            ]
+        });
+
+        if (!shelf) {
+            return res.status(404).json({ message: 'Shelf not found' });
+        }
+
+        if (!shelf.products) {
+            shelf.products = [];
+        }
+
+        // Create product object with all required fields including count and notes
+        const productToAdd = {
+            category_id: req.body.category_id,
+            emoji: req.body.emoji,
+            name: req.body.name,
+            count: req.body.count || 1,  // Default to 1 if not provided
+            notes: req.body.notes || '',  // Default to empty string if not provided
+            expiration_date: req.body.expiration_date,
+            shelf_id: shelf_id,
+            box_id: box_id
+        };
+
+        shelf.products.push(productToAdd);
+        const updatedShelf = await shelf.save();
+
+        res.json(updatedShelf);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            message: 'Error adding product to shelf',
+            error: error.message
+        });
     }
 });
 
@@ -473,7 +511,6 @@ app.delete('/shelves/:shelfId', authenticateToken, async (req, res) => {
 //Create category
 app.post('/categories', authenticateToken, async (req, res) => {
     const category = req.body;
-    console.log(category);
 });
 
 //Get categories list

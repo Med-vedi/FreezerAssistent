@@ -72,7 +72,6 @@ const OnboardingPage = () => {
     }
 
     const onContinue = async () => {
-        console.log('user', user)
         if (!user) return;
         try {
             const res = await axiosInstance.post('/user-ready', { email: user?.email })

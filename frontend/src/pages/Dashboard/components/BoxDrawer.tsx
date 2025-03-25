@@ -29,11 +29,12 @@ const BoxDrawer = ({
     const intl = useIntl()
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
-    const [showAddItemModal, setShowAddItemModal] = useState(false)
+
     const [filteredShelvesState, setFilteredShelvesState] = useState<Shelf[]>([])
     const [isLoadingId, setIsLoadingId] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [boxes, setBoxes] = useState<Box[]>([])
+    const [selectedShelfId, setSelectedShelfId] = useState('')
 
     const getBoxes = async () => {
         const response = await axiosInstance.get<Box[]>('/boxes/user')
@@ -141,18 +142,20 @@ const BoxDrawer = ({
                             setSelectedProduct={setSelectedProduct}
                             isLoadingId={isLoadingId}
                             handleDeleteProduct={handleDeleteProduct}
-                            setShowAddItemModal={setShowAddItemModal}
+                            setSelectedShelfId={setSelectedShelfId}
                         />
                     )}
                 </div>
             </DrawerCustom>
 
             <AddProductModal
-                open={showAddItemModal}
+                open={!!selectedShelfId}
                 onCancel={() => {
-                    setShowAddItemModal(false)
                     setSelectedProduct(null)
+                    setSelectedShelfId('')
                 }}
+                shelfId={selectedShelfId}
+                boxId={selectedBoxId}
                 product={selectedProduct || undefined}
             />
         </>
@@ -169,7 +172,7 @@ interface ShelvesIslandsProps {
     boxId: string
     isLoadingId: string
     handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
-    setShowAddItemModal: (show: boolean) => void
+    setSelectedShelfId: (shelfId: string) => void
 }
 const ShelvesIslands = ({
     shelves,
@@ -180,13 +183,13 @@ const ShelvesIslands = ({
     boxId,
     isLoadingId,
     handleDeleteProduct,
-    setShowAddItemModal
+    setSelectedShelfId
 }: ShelvesIslandsProps) => {
     if (shelves.length === 0) {
         return (
             <div className='flex flex-col gap-4 justify-center items-center p-4'>
                 <h1>{intl.formatMessage({ id: 'noShelves' })}</h1>
-                <Button type='primary' onClick={() => setShowAddItemModal(true)}>{intl.formatMessage({ id: 'addProduct' })}</Button>
+                {/* <Button type='primary' onClick={() => setShowAddItemModal&&setShowAddItemModal(true)}>{intl.formatMessage({ id: 'addProduct' })}</Button> */}
             </div>
         )
     }
@@ -234,7 +237,7 @@ const ShelvesIslands = ({
                                 size='large'
                                 type='primary'
                                 onClick={() => {
-                                    setShowAddItemModal(true)
+                                    setSelectedShelfId(shelf.id)
                                 }}
                             >
                                 {intl.formatMessage({ id: 'addProduct' })}

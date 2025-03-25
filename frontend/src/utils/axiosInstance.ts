@@ -1,26 +1,26 @@
-import { BASE_URL } from './constants';
-import axios, { InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: BASE_URL,
-    timeout: 10000,
+    baseURL: 'http://localhost:8080',
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-    },
+    }
 });
-console.log(BASE_URL);
 
+// Add request interceptor to automatically add token
 axiosInstance.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const accessToken = localStorage.getItem('token');
-        if (accessToken && config.headers) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+        return Promise.reject(error);
+    }
 );
 
 // Add response interceptor for error handling

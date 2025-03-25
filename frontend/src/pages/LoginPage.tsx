@@ -12,7 +12,6 @@ const LoginPage = () => {
         try {
             const user = await login(values.email, values.password)
             if (user?.isReady) {
-                console.log('user', user)
                 navigate('/dashboard')
             } else {
                 navigate('/onboarding')

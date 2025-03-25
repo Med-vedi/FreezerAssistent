@@ -13,6 +13,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     const [selectedBoxId, setSelectedBoxId] = useState('');
     const [selectedShelfId, setSelectedShelfId] = useState('');
 
+
     return (
         <DashboardContext.Provider value={{
             selectedBoxId,

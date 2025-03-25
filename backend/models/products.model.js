@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
     expiration_date: Date,
     box_id: String,
     shelf_id: String,
+    notes: String,
     count: Number,
 }, { collection: 'products' });
 

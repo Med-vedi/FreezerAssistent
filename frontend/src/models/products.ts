@@ -10,6 +10,7 @@ export interface Product {
     box_id?: string;
     shelf_id?: string;
     count?: number;
+    notes?: string;
 }
 
 export type ProductCategory =
