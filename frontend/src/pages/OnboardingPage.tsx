@@ -3,19 +3,22 @@ import Fridge from '@/assets/icons/Fridge';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { Button, Input } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '@/utils/axiosInstance';
 import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '@/context/AuthContext';
+import { useGetUserQuery, useUpdateUserReadyMutation } from '@/store/users/users.api';
+import { useCreateUserBoxesMutation } from '@/store/boxes/boxes.api';
 
 const OnboardingPage = () => {
     const intl = useIntl();
-    const { user } = useAuth();
+    const { data } = useGetUserQuery();
+    const user = data?.user;
 
     const navigate = useNavigate();
+    const [updateUserReady] = useUpdateUserReadyMutation();
+    const [createUserBoxes] = useCreateUserBoxesMutation();
 
     const shelvesRandomIds = Array.from({ length: 5 }, () => uuidv4());
 
@@ -55,34 +58,36 @@ const OnboardingPage = () => {
         setBoxes(boxes.filter((b) => b.id !== id));
     }
     const createBoxes = async () => {
-
         if (!user) return;
         const payload = {
             boxes,
             user_id: user.id
-        }
+        };
         try {
-            const res = await axiosInstance.post('/boxes/user', payload);
-            if (res.status === 200) {
-                navigate('/dashboard');
-            }
+            await createUserBoxes(payload).unwrap();
+            navigate('/dashboard');
         } catch (err) {
             console.log(err);
         }
-    }
+    };
+
 
     const onContinue = async () => {
         if (!user) return;
         try {
-            const res = await axiosInstance.post('/user-ready', { email: user?.email })
-            console.log('res', res)
-            if (res.status === 200) {
-                createBoxes();
-            }
+            const res = await updateUserReady({ email: user.email }).unwrap();
+            console.log('res', res);
+            createBoxes();
         } catch (err) {
             console.log(err);
         }
-    }
+    };
+
+    useEffect(() => {
+        if (user?.isReady) {
+            navigate('/dashboard');
+        }
+    }, [user?.isReady, navigate]);
 
 
     return (

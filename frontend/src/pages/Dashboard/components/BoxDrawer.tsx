@@ -12,18 +12,21 @@ import { SearchOutlined, DeleteOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import AddProductModal from './AddProductModal'
 import axiosInstance from '@/utils/axiosInstance'
-import { message, Spin } from 'antd'
+import { Spin } from 'antd'
 import { Shelf } from '@/models/shelves'
-import { Box } from '@/models/boxes'
 import { useDashboard } from '@/context/DashboardContext'
+import { Box } from '@/models/boxes'
+import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api'
 interface BoxDrawerProps {
     selectedProduct: Product | null;
     setSelectedProduct: (product: Product | null) => void;
+    boxes: Box[]
 }
 
 const BoxDrawer = ({
     selectedProduct,
-    setSelectedProduct
+    setSelectedProduct,
+    boxes
 }: BoxDrawerProps) => {
     const { selectedBoxId, setSelectedBoxId } = useDashboard()
     const intl = useIntl()
@@ -32,36 +35,18 @@ const BoxDrawer = ({
 
     const [filteredShelvesState, setFilteredShelvesState] = useState<Shelf[]>([])
     const [isLoadingId, setIsLoadingId] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
-    const [boxes, setBoxes] = useState<Box[]>([])
     const [selectedShelfId, setSelectedShelfId] = useState('')
 
-    const getBoxes = async () => {
-        const response = await axiosInstance.get<Box[]>('/boxes/user')
-        setBoxes(response.data)
-    }
+    const { data: shelves, isLoading: shelvesLoading } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
+        skip: !selectedBoxId
+    })
 
     useEffect(() => {
-        getBoxes()
-    }, [])
-    const getShelvesByBoxId = async (boxId: string) => {
-        try {
-            setIsLoading(true)
-            const response = await axiosInstance.get<Shelf[]>(`/shelves?box_id=${boxId}`)
-            setFilteredShelvesState(response.data)
-        } catch (error) {
-            console.error('Error fetching shelves:', error)
-            message.error(intl.formatMessage({ id: 'error.fetchingShelves' }))
-        } finally {
-            setIsLoading(false)
+        if (shelves) {
+            setFilteredShelvesState(shelves)
         }
-    }
+    }, [shelves])
 
-    useEffect(() => {
-        if (selectedBoxId) {
-            getShelvesByBoxId(selectedBoxId)
-        }
-    }, [selectedBoxId])
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -129,7 +114,7 @@ const BoxDrawer = ({
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-                    {isLoading ? (
+                    {shelvesLoading ? (
                         <div className="flex justify-center items-center p-4">
                             <Spin size='large' />
                         </div>
@@ -154,8 +139,6 @@ const BoxDrawer = ({
                     setSelectedProduct(null)
                     setSelectedShelfId('')
                 }}
-                shelfId={selectedShelfId}
-                boxId={selectedBoxId}
                 product={selectedProduct || undefined}
             />
         </>
@@ -196,16 +179,16 @@ const ShelvesIslands = ({
 
     return (
         shelves.map((shelf, index) => (
-            <div key={shelf.id + index}>
+            <div key={shelf.id + index + shelf.level}>
                 <IslandLayout className='max-h-[200px] overflow-y-auto'>
                     <h1>{`${intl.formatMessage({ id: 'shelf' })} ${shelf.level}`}</h1>
                     {shelf.products.length > 0
                         ?
 
                         <div className='flex flex-col gap-2'>
-                            {shelf.products.map((product) => (
+                            {shelf.products.map((product, index) => (
                                 <div
-                                    key={product.id}
+                                    key={index}
                                     className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
                                     onClick={() => setSelectedProduct({
                                         ...product,
@@ -232,7 +215,9 @@ const ShelvesIslands = ({
                             ))}
                         </div>
                         :
-                        <div className='w-full flex justify-center items-center'>
+                        <div
+                            key={shelf.id + index + shelf.level}
+                            className='w-full flex justify-center items-center'>
                             <Button
                                 size='large'
                                 type='primary'

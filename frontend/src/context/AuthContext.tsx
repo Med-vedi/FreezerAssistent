@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
+import { createContext, useContext, ReactNode, useState } from 'react';
+import { useLoginMutation, useRegisterMutation, useLogoutMutation } from '@/store/users/users.api';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 interface User {
     id: string;
@@ -20,97 +22,64 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080',  // Development
-    // baseURL: 'https://your-production-backend.com',  // Production
-    withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
+    const [login] = useLoginMutation();
+    const [register] = useRegisterMutation();
+    const [logout] = useLogoutMutation();
 
-    const checkAuth = async () => {
+    const user = useSelector((state: RootState) => state.userState.user);
+
+    const handleLogin = async (email: string, password: string) => {
+        setIsLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setIsLoading(false);
-                return null;
-            }
-
-            const response = await axiosInstance.get('/get-user');
-            const userData = response.data.user;
-            setUser(userData);
-            return userData;
-        } catch (err) {
-            console.error('Auth check failed:', err);
-            localStorage.removeItem('token');
-            setUser(null);
-            return null;
+            const result = await login({ email, password }).unwrap();
+            return result.user;
+        } catch (error) {
+            console.error('Login failed:', error);
+            throw error;
         } finally {
             setIsLoading(false);
         }
     };
 
-    const login = async (email: string, password: string): Promise<User> => {
-        try {
-            const response = await axiosInstance.post('/login', {
-                email,
-                password
-            });
-            const { accessToken, user: userData } = response.data;
-            localStorage.setItem('token', accessToken);
-            setUser(userData);
-            return userData;
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    };
-
-    const logout = async () => {
-        try {
-            if (user?.email) {
-                await axiosInstance.post('/logout', { email: user.email });
+    const handleLogout = async () => {
+        if (user?.email) {
+            setIsLoading(true);
+            try {
+                await logout({ email: user.email });
+                window.location.replace('/login');
+            } catch (error) {
+                console.error('Logout failed:', error);
+            } finally {
+                setIsLoading(false);
             }
-        } catch (err) {
-            console.error('Logout request failed:', err);
-        } finally {
-            localStorage.removeItem('token');
-            setUser(null);
-            window.location.replace('/login');
         }
     };
 
-    const register = async (name: string, email: string, password: string) => {
-        const response = await axiosInstance.post('/users', { name, email, password });
-        const { accessToken, user: userData } = response.data;
-
-        localStorage.setItem('token', accessToken);
-        setUser(userData);
-        window.location.replace('/onboarding');
+    const handleRegister = async (name: string, email: string, password: string) => {
+        try {
+            setIsLoading(true);
+            await register({ name, email, password }).unwrap();
+            // The user data will be automatically updated in the Redux store
+            window.location.replace('/onboarding');
+        } catch (error) {
+            console.error('Register failed:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
-
-    useEffect(() => {
-        // console.log('user', user)
-    }, [user]);
 
     return (
         <AuthContext.Provider value={{
             user,
-            setUser,
+            setUser: () => { },
             isLoading,
-            login,
-            logout,
-            register,
-            checkAuth
+            login: handleLogin,
+            logout: handleLogout,
+            register: handleRegister,
+            checkAuth: () => Promise.resolve(user), // No longer needed with RTK Query
         }}>
             {children}
         </AuthContext.Provider>

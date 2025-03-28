@@ -1,6 +1,6 @@
 import { Product } from '@/models/products';
 import { MinusOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space, Spin } from 'antd';
+import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useIntl } from 'react-intl';
@@ -8,53 +8,45 @@ import { DATE_FORMAT } from '@/constants';
 import Freezer from '@/assets/icons/Freezer';
 import Fridge from '@/assets/icons/Fridge';
 
-// import { boxes } from '@/MOCKS/boxes';
-// import { shelves } from '@/MOCKS/shelves';
-
 import { products } from '@/MOCKS/products';
 import { categories } from '@/MOCKS/categories';
 import { Category } from '@/models/categories';
-
-import { Box } from '@/models/boxes';
-import { Shelf } from '@/models/shelves';
-import axiosInstance from '@/utils/axiosInstance';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/context/DashboardContext';
+import { useGetProductQuery, useUpdateProductMutation } from '@/store/products/products.api';
+import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api';
+import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api';
+
 interface ProductDrawerCardProps {
-    product?: Product
-    onConfirm: (product: Product) => void
-    shelfId?: string
-    boxId?: string
+    productId: string;
 }
 
-const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawerCardProps) => {
-    const { user } = useAuth()
-    const { selectedBoxId } = useDashboard()
+const ProductDrawerCard = ({ productId }: ProductDrawerCardProps) => {
+    const { user } = useAuth();
+    const { selectedBoxId, selectedShelfId } = useDashboard();
+    const { data: product, isLoading } = useGetProductQuery(productId);
+    const [updateProduct] = useUpdateProductMutation();
+    const { data: boxes = [] } = useGetUserBoxesQuery(user?.id ?? '');
+    const { data: shelves = [] } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '');
 
     const initialProduct: Partial<Product> = {
-        ...product,
         id: new Date().getTime().toString(),
         name: '',
         category: 'altro',
         expiration_date: new Date().toISOString(),
         count: 0,
-        box_id: boxId,
-        shelf_id: shelfId || product?.shelf_id || '',
+        box_id: selectedBoxId,
+        shelf_id: selectedShelfId || product?.shelf_id || '',
         notes: product?.notes || ''
-    }
+    };
     const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
-    const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct)
-    const [productsList, setProductsList] = useState<Product[]>(products)
-    const [categoriesList, setCategoriesList] = useState<Category[]>(categories)
-    const [newProductName, setNewProductName] = useState('')
-    const [boxes, setBoxes] = useState<Box[]>([])
-    const [shelves, setShelves] = useState<Shelf[]>([])
-    const [boxesLoading, setBoxesLoading] = useState(false)
-    const [shelvesLoading, setShelvesLoading] = useState(false)
+    const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct);
+    const [productsList, setProductsList] = useState<Product[]>(products);
+    const [categoriesList, setCategoriesList] = useState<Category[]>(categories);
+    const [newProductName, setNewProductName] = useState('');
 
     const intl = useIntl();
     const inputRef = useRef<InputRef>(null);
-
 
     const mboxes = useMemo(() => boxes.map(box => ({
         value: box.id,
@@ -64,101 +56,42 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
             </div>
             <span>{box.title}</span>
         </div>
-    })), [boxes])
-
-    const getBoxes = async () => {
-        try {
-            setBoxesLoading(true)
-            const response = await axiosInstance.get<Box[]>(`/boxes/user?user_id=${user?.id}`)
-            setBoxes(response.data)
-        } catch (error) {
-            console.error('Error fetching boxes:', error)
-        } finally {
-            setBoxesLoading(false)
-        }
-    }
-
-    const getShelves = async () => {
-        try {
-            setShelvesLoading(true)
-            const response = await axiosInstance.get<Shelf[]>(`/shelves?box_id=${boxId}`)
-            setShelves(response.data)
-        } catch (error) {
-            console.error('Error fetching shelves:', error)
-        } finally {
-            setShelvesLoading(false)
-        }
-    }
-    useEffect(() => {
-        setCategoriesList(categories)
-    }, [categories])
+    })), [boxes]);
 
     useEffect(() => {
-        console.log('product', product)
+        setCategoriesList(categories);
+    }, [categories]);
+
+    useEffect(() => {
         if (product && boxes.length > 0 && shelves.length > 0) {
             setProductInfo({
                 ...product,
-                expiration_date: product.expiration_date,
-                count: product.count || 0,
-                category: product.category || 'altro',
-                category_id: product.category_id || 0,
-                name: product.name || '',
                 box_id: product.box_id || selectedBoxId || boxes[0].id,
-                shelf_id: product.shelf_id || shelfId || shelves[0].id
-            })
-        }
-
-        if (!product && boxes.length > 0 && shelves.length > 0) {
+                shelf_id: product.shelf_id || selectedShelfId || shelves[0].id
+            });
+        } else if (!product && boxes.length > 0 && shelves.length > 0) {
             setProductInfo({
                 ...initialProduct,
                 expiration_date: dayjs().toDate().toISOString(),
-                count: 1,
-                category: 'altro',
-                category_id: 0,
-                name: '',
                 box_id: selectedBoxId || boxes[0].id,
-                shelf_id: shelfId || shelves[0].id
-            })
+                shelf_id: selectedShelfId || shelves[0].id
+            });
         }
-    }, [product, boxes, shelves, shelfId])
+    }, [product, boxes, shelves, selectedBoxId, selectedShelfId]);
 
-    useEffect(() => {
-        setBoxes(boxes)
-        setShelves(shelves)
-    }, [boxes, shelves])
+    const handleSave = async () => {
+        try {
+            await updateProduct(productInfo as Product).unwrap();
+            // Handle success
+        } catch (error) {
+            console.error('Failed to update product:', error);
+            // Handle error
+        }
+    };
 
-    useEffect(() => {
-        getBoxes()
-        getShelves()
-    }, [])
-
-
-    const handleConfirm = () => {
-        const categoryName = categoriesList.find(category => category.id === productInfo.category_id)?.name
-
-        const productWithISODate = {
-            expiration_date: expirationDate.toISOString(),
-            notes: productInfo?.notes || '',
-            box_id: productInfo?.box_id || '',
-            shelf_id: productInfo?.shelf_id || '',
-            count: productInfo?.count || 1,
-            name: productInfo?.name || '',
-            category: categoryName || 'altro',
-            category_id: productInfo?.category_id || 0,
-            emoji: productInfo?.emoji || '🍽️',
-            en: productInfo?.name || '',
-            it: productInfo?.name || ''
-        };
-        onConfirm(productWithISODate as Product);
+    if (isLoading) {
+        return <div>Loading...</div>;
     }
-
-    if (boxesLoading || shelvesLoading) {
-        return <div className='flex justify-center items-center h-full'>
-            <Spin size='large' />
-        </div>
-    }
-    console.log('shelves', shelves)
-
 
     return (
         <div className='flex flex-col gap-4 mt-4'>
@@ -321,7 +254,7 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                         options={shelves.map(shelf => ({ value: shelf.id, label: shelf.level }))}
                         size='large'
                         className='w-full z-0'
-                        defaultValue={shelfId}
+                        defaultValue={selectedShelfId}
                         style={{ width: '100%', zIndex: '0 !important' }}
                         onChange={(value) => {
                             const shelf = shelves.find(shelf => shelf.id === value.toString())
@@ -360,7 +293,7 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                     type='primary'
                     size='large'
                     block
-                    onClick={handleConfirm}
+                    onClick={handleSave}
                 >
                     {intl.formatMessage({ id: 'confirm' })}
                 </Button>

@@ -234,6 +234,9 @@ app.post('/boxes/user', authenticateToken, async (req, res) => {
 
 //Get boxes list by user_id
 app.get('/boxes/user', authenticateToken, async (req, res) => {
+    if (!req.query.user_id) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
     try {
         const { user_id } = req.query;
         const query = {};

@@ -1,6 +1,7 @@
 export interface Box {
-    id: string;
+    type: "freezer" | "fridge";
     title: string;
+    id: string;
     shelves_ids: string[];
-    type: 'freezer' | 'fridge';
+    user_id: string;
 }
