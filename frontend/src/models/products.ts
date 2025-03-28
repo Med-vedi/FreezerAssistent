@@ -1,4 +1,5 @@
 export interface Product {
+    _id?: string;
     id: string;
     name: string;
     category: ProductCategory;
@@ -11,6 +12,21 @@ export interface Product {
     shelf_id?: string;
     count?: number;
     notes?: string;
+}
+
+export interface ProductBase {
+    id: string;
+    name: string;
+    category: ProductCategory;
+    category_id: number;
+    emoji: string;
+    en: string;
+    it: string;
+}
+
+export interface ShelfProduct extends Product {
+    shelf_id: string;
+    box_id: string;
 }
 
 export type ProductCategory =

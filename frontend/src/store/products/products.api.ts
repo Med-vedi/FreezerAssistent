@@ -2,6 +2,11 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { PRODUCTS_TAGS } from '../tags';
 import { Product } from '@/models/products';
 
+interface GetProductsParams {
+    name?: string;
+    category_id?: string;
+}
+
 export const productsApi = createApi({
     reducerPath: 'products',
     baseQuery: fetchBaseQuery({
@@ -17,7 +22,11 @@ export const productsApi = createApi({
         },
         credentials: 'include',
     }),
-    tagTypes: [PRODUCTS_TAGS.PRODUCTS],
+    tagTypes: [
+        PRODUCTS_TAGS.PRODUCTS,
+        PRODUCTS_TAGS.PRODUCTS_ALL,
+        PRODUCTS_TAGS.PRODUCT
+    ],
     endpoints: (build) => ({
         createProduct: build.mutation<Product, Product>({
             query: (product) => ({
@@ -29,7 +38,7 @@ export const productsApi = createApi({
         }),
         getProduct: build.query<Product, string>({
             query: (productId) => `/products/${productId}`,
-            providesTags: (result, error, id) => [{ type: PRODUCTS_TAGS.PRODUCTS, id }]
+            providesTags: (result, error, id) => [{ type: PRODUCTS_TAGS.PRODUCT, id }]
         }),
         updateProduct: build.mutation<Product, Product>({
             query: (product) => ({
@@ -39,7 +48,27 @@ export const productsApi = createApi({
             }),
             invalidatesTags: (result, error, { id }) => [{ type: PRODUCTS_TAGS.PRODUCTS, id }]
         }),
+        getProducts: build.query<Product[], GetProductsParams>({
+            query: (params) => ({
+                url: '/products',
+                params
+            }),
+            providesTags: [PRODUCTS_TAGS.PRODUCTS_ALL]
+        }),
+        deleteProduct: build.mutation<void, { productId: string, shelfId: string }>({
+            query: ({ productId, shelfId }) => ({
+                url: `/products/${productId}/shelf/${shelfId}`,
+                method: 'DELETE'
+            }),
+            invalidatesTags: [PRODUCTS_TAGS.PRODUCTS, PRODUCTS_TAGS.PRODUCTS_ALL]
+        }),
     }),
 });
 
-export const { useCreateProductMutation, useGetProductQuery, useUpdateProductMutation } = productsApi;
+export const {
+    useCreateProductMutation,
+    useGetProductQuery,
+    useUpdateProductMutation,
+    useGetProductsQuery,
+    useDeleteProductMutation
+} = productsApi;

@@ -1,26 +1,42 @@
+import { useDashboard } from '@/context/DashboardContext'
 import { useDebounce } from '@/hooks/useDebounce'
 import IslandLayout from '@/layout/IslandLayout'
-import { products } from '@/MOCKS/products'
+// import { products } from '@/MOCKS/products'
 import { Product } from '@/models/products'
+import { RootState } from '@/store'
+import { useGetUserDataQuery } from '@/store/userData/userData.api'
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
-import { Input } from 'antd'
+import { Input, Spin } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
+import { useSelector } from 'react-redux'
 
-const AllProductsIsland = ({ handleProductClick, selectedProduct }: { handleProductClick: (product: Product) => void, selectedProduct: Product | null }) => {
-
+const AllProductsIsland = () => {
+    const user = useSelector((state: RootState) => state.userState.user);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [searchAllProducts, setSearchAllProducts] = useState<string>('')
+
+    const { selectedProduct, setSelectedProduct } = useDashboard()
+
+    const { data: userData, isLoading: userDataLoading } = useGetUserDataQuery(user?.id ?? '', {
+        skip: !user?.id
+    });
 
     const debouncedSearchAll = useDebounce(searchAllProducts, 500)
 
     useEffect(() => {
-        setFilteredProducts(products.filter((product) =>
+        setFilteredProducts(userData?.products_all?.filter((product) =>
             product.name.toLowerCase().includes(debouncedSearchAll.toLowerCase())
-        ))
-    }, [debouncedSearchAll, products])
+        ) ?? [])
+    }, [debouncedSearchAll, userData?.products_all])
 
-
+    if (userDataLoading) {
+        return (
+            <IslandLayout>
+                <Spin />
+            </IslandLayout>
+        )
+    }
     return (
         <IslandLayout>
             <div className='flex flex-col gap-4 overflow-y-auto h-[360px]'>
@@ -42,7 +58,7 @@ const AllProductsIsland = ({ handleProductClick, selectedProduct }: { handleProd
                         <div
                             key={product.id}
                             className={`p-4 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex items-center gap-2 cursor-pointer`}
-                            onClick={() => handleProductClick(product)}
+                            onClick={() => setSelectedProduct(product)}
                         >{product.emoji} {product.name}</div>
                     ))}
                 </div>

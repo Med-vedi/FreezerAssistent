@@ -12,6 +12,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 
 const User = require('./models/user.model');
+const UserData = require('./models/userData.model');
 const Box = require('./models/boxes.model');
 const Product = require('./models/products.model');
 const Shelf = require('./models/shelves.model');
@@ -198,6 +199,67 @@ app.put('/users/:id', authenticateToken, async (req, res) => {
     const { name, email, password } = req.body;
     const user = await User.findByIdAndUpdate(req.params.id, { name, email, password }, { new: true });
     res.json(user);
+});
+
+//USER DATA
+
+//get user data by user_id
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.query;
+    const userData = await UserData.findOne({ user_id });
+    res.json(userData);
+});
+
+//Create user data
+app.post('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.body;
+    const userData = await UserData.create({ user_id, products: [] });
+    res.json(userData);
+});
+//Put user products
+app.put('/user-data/products', authenticateToken, async (req, res) => {
+    const { user_id, products } = req.body;
+    const userData = await UserData.findOneAndUpdate({ user_id }, { products }, { new: true });
+    res.json(userData);
+});
+
+//force import product to user data
+app.post('/user-data/products/import', authenticateToken, async (req, res) => {
+    try {
+        const { user_id } = req.body;
+
+        // Get all products from db
+        const products = await Product.find();
+
+        // Find or create user data
+        let userData = await UserData.findOne({ user_id });
+        if (!userData) {
+            userData = new UserData({ user_id, products: [], products_all: [] }); // Create if not found
+        }
+
+        // Update products_all array
+        userData.products_all = products;
+        await userData.save();
+        res.json(userData);
+    } catch (error) {
+        console.error('Error importing products:', error);
+        res.status(500).json({ message: 'Error importing products to user data' });
+    }
+});
+
+//Get user data
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.query;
+    const userData = await UserData.findOne({ user_id });
+    res.json(userData);
+});
+
+//Update user data by id
+//TODO
+app.put('/user-data/:id', authenticateToken, async (req, res) => {
+    const { user_id, products } = req.body;
+    const userData = await UserData.findByIdAndUpdate(req.params.id, { user_id, products }, { new: true });
+    res.json(userData);
 });
 
 //BOXES

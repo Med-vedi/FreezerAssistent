@@ -1,31 +1,39 @@
-import { useEffect, useState } from 'react'
-import { Product } from '@/models/products'
+import { useEffect } from 'react'
 import AddProductModal from './components/AddProductModal'
 import BoxesIsland from './components/BoxesIsland'
 import ExpiredProductsIsland from './components/ExpiredProductsIsland'
 import AllProductsIsland from './components/AllProductsIsland'
 import BoxDrawer from './components/BoxDrawer'
-import { DashboardProvider } from '@/context/DashboardContext'
+import { useDashboard } from '@/context/DashboardContext'
 import { useGetUserQuery } from '@/store/users/users.api'
 import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api'
 import { useNavigate } from 'react-router-dom'
+import { useGetUserDataQuery } from '@/store/userData/userData.api';
 const DashboardPage = () => {
     const navigate = useNavigate();
-    const { data: userData, isLoading: userLoading } = useGetUserQuery();
-    const { data: boxes = [], isLoading: boxesLoading } = useGetUserBoxesQuery(userData?.user?.id ?? '', {
-        skip: !userData?.user?.id
+    const { data: userResponse, isLoading: userLoading } = useGetUserQuery();
+    const { data: userData, isLoading: userDataLoading } = useGetUserDataQuery(userResponse?.user?.id ?? '', {
+        skip: !userResponse?.user?.id
     });
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+    const { data: boxes = [], isLoading: boxesLoading } = useGetUserBoxesQuery(userResponse?.user?.id ?? '', {
+        skip: !userResponse?.user?.id
+    });
+    const {
+        selectedProduct,
+        setSelectedProduct,
+        showBoxDrawer,
+        showAddProductModal
+    } = useDashboard()
 
-    const handleProductClick = (product: Product) => {
-        setSelectedProduct(product)
-    }
 
     useEffect(() => {
-        if (!userData?.user?.isReady && !userLoading) {
+        if (!userResponse?.user?.isReady && !userLoading) {
             navigate('/onboarding');
         }
-    }, [userData?.user?.isReady, userLoading, navigate]);
+        if (userResponse?.user?.isReady && !userDataLoading && !userData?.products?.length) {
+            console.log('Importing products');
+        }
+    }, [userResponse?.user?.isReady, userLoading, navigate]);
 
     if (userLoading || boxesLoading) {
         return (
@@ -35,45 +43,40 @@ const DashboardPage = () => {
         )
     }
     return (
-        <DashboardProvider>
-            <div className='flex flex-col gap-4 pb-32'>
-                <div className='flex flex-col md:flex-row gap-4'>
-                    <BoxesIsland
-                        boxesLoading={boxesLoading}
-                        boxes={boxes}
-                    />
-                    <div className='w-full md:w-1/2'>
-                        <ExpiredProductsIsland
-                            handleProductClick={handleProductClick}
-                            selectedProduct={selectedProduct}
-                        />
-                    </div>
-                </div>
-
-                <AllProductsIsland
-                    handleProductClick={handleProductClick}
-                    selectedProduct={selectedProduct}
-                />
-
-
-                <BoxDrawer
-                    selectedProduct={selectedProduct}
-                    setSelectedProduct={setSelectedProduct}
+        <div className='flex flex-col gap-4 pb-32'>
+            <div
+                className='flex flex-col md:flex-row gap-4'>
+                <BoxesIsland
+                    boxesLoading={boxesLoading}
                     boxes={boxes}
                 />
-
-                {selectedProduct ?
-                    <AddProductModal
-                        open={!!selectedProduct}
-                        onCancel={() => setSelectedProduct(null)}
-                        product={selectedProduct}
+                <div className='w-full md:w-1/2'>
+                    <ExpiredProductsIsland
+                        handleProductClick={(product) => setSelectedProduct(product)}
+                        selectedProduct={selectedProduct}
                     />
-                    : null
-                }
-
-
+                </div>
             </div>
-        </DashboardProvider>
+
+            <AllProductsIsland />
+
+            {showBoxDrawer
+                ?
+                <BoxDrawer
+                    boxes={boxes}
+                />
+                :
+                null
+            }
+
+            {showAddProductModal
+                ?
+                <AddProductModal />
+                : null
+            }
+
+
+        </div>
     )
 }
 

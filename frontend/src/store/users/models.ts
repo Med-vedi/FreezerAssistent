@@ -4,3 +4,8 @@ export interface User {
     email: string;
     isReady: boolean;
 }
+
+export interface GetUserResponse {
+    user: User;
+    message: string;
+}

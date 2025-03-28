@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useGetUserQuery, useUpdateUserReadyMutation } from '@/store/users/users.api';
 import { useCreateUserBoxesMutation } from '@/store/boxes/boxes.api';
-
+import { useCreateUserDataMutation, useImportProductsMutation } from '@/store/userData/userData.api';
 const OnboardingPage = () => {
     const intl = useIntl();
     const { data } = useGetUserQuery();
@@ -19,7 +19,8 @@ const OnboardingPage = () => {
     const navigate = useNavigate();
     const [updateUserReady] = useUpdateUserReadyMutation();
     const [createUserBoxes] = useCreateUserBoxesMutation();
-
+    const [createUserData] = useCreateUserDataMutation();
+    const [importProducts] = useImportProductsMutation();
     const shelvesRandomIds = Array.from({ length: 5 }, () => uuidv4());
 
     const [boxes, setBoxes] = useState<{ type: 'freezer' | 'fridge', title: string, id: string, shelves_ids: string[], user_id: string }[]>([
@@ -65,6 +66,7 @@ const OnboardingPage = () => {
         };
         try {
             await createUserBoxes(payload).unwrap();
+            await createUserData(user.id).unwrap();
             navigate('/dashboard');
         } catch (err) {
             console.log(err);
@@ -76,6 +78,7 @@ const OnboardingPage = () => {
         if (!user) return;
         try {
             const res = await updateUserReady({ email: user.email }).unwrap();
+            await importProducts(user.id).unwrap();
             console.log('res', res);
             createBoxes();
         } catch (err) {

@@ -13,28 +13,29 @@ import { categories } from '@/MOCKS/categories';
 import { Category } from '@/models/categories';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/context/DashboardContext';
-import { useGetProductQuery, useUpdateProductMutation } from '@/store/products/products.api';
+import { useGetProductQuery } from '@/store/products/products.api';
 import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api';
 import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api';
 
 interface ProductDrawerCardProps {
-    productId: string;
+    productId?: string;
+    onConfirm: (product: Product) => void;
 }
 
-const ProductDrawerCard = ({ productId }: ProductDrawerCardProps) => {
+const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => {
     const { user } = useAuth();
     const { selectedBoxId, selectedShelfId } = useDashboard();
-    const { data: product, isLoading } = useGetProductQuery(productId);
-    const [updateProduct] = useUpdateProductMutation();
+    const { data: product, isLoading } = useGetProductQuery(productId ?? '', {
+        skip: !productId
+    });
     const { data: boxes = [] } = useGetUserBoxesQuery(user?.id ?? '');
     const { data: shelves = [] } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '');
 
     const initialProduct: Partial<Product> = {
-        id: new Date().getTime().toString(),
         name: '',
         category: 'altro',
-        expiration_date: new Date().toISOString(),
-        count: 0,
+        expiration_date: '',
+        count: 1,
         box_id: selectedBoxId,
         shelf_id: selectedShelfId || product?.shelf_id || '',
         notes: product?.notes || ''
@@ -79,15 +80,17 @@ const ProductDrawerCard = ({ productId }: ProductDrawerCardProps) => {
         }
     }, [product, boxes, shelves, selectedBoxId, selectedShelfId]);
 
-    const handleSave = async () => {
-        try {
-            await updateProduct(productInfo as Product).unwrap();
-            // Handle success
-        } catch (error) {
-            console.error('Failed to update product:', error);
-            // Handle error
+
+
+    useEffect(() => {
+        if (selectedBoxId && selectedShelfId) {
+            setProductInfo({
+                ...productInfo,
+                box_id: selectedBoxId,
+                shelf_id: selectedShelfId
+            })
         }
-    };
+    }, [selectedBoxId, selectedShelfId])
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -198,8 +201,8 @@ const ProductDrawerCard = ({ productId }: ProductDrawerCardProps) => {
                 <DatePicker
                     className='w-full'
                     size='large'
-                    defaultValue={dayjs(expirationDate, DATE_FORMAT)}
-                    value={dayjs(expirationDate)}
+                    defaultValue={expirationDate ? dayjs(expirationDate, DATE_FORMAT) : undefined}
+                    value={expirationDate ? dayjs(expirationDate) : undefined}
                     format={DATE_FORMAT}
                     showTime={false}
                     onChange={(date) => {
@@ -293,7 +296,7 @@ const ProductDrawerCard = ({ productId }: ProductDrawerCardProps) => {
                     type='primary'
                     size='large'
                     block
-                    onClick={handleSave}
+                    onClick={() => onConfirm(productInfo as Product)}
                 >
                     {intl.formatMessage({ id: 'confirm' })}
                 </Button>

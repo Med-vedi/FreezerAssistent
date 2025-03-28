@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { User } from './models';
+import { GetUserResponse, User } from './models';
 import { USER_TAGS } from '../tags';
 
 const apiBaseUrl = import.meta.env.VITE_BACKEND_URL_DEV;
@@ -53,8 +53,9 @@ export const userApi = createApi({
             },
         }),
 
-        getUser: build.query<{ user: User }, void>({
+        getUser: build.query<GetUserResponse, void>({
             query: () => '/get-user',
+            providesTags: [USER_TAGS.USER]
         }),
 
         logout: build.mutation<void, { email: string }>({

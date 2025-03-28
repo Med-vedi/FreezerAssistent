@@ -2,44 +2,43 @@ import Freezer from '@/assets/icons/Freezer'
 import Fridge from '@/assets/icons/Fridge'
 import DrawerCustom from '@/components/Drawer'
 import IslandLayout from '@/layout/IslandLayout'
-// import { boxes } from '@/MOCKS/boxes'
-// import { shelves } from '@/MOCKS/shelves'
-import { Product } from '@/models/products'
 import Input from 'antd/es/input'
 import { useState, useEffect } from 'react'
-import { IntlShape, useIntl } from 'react-intl'
+import { useIntl } from 'react-intl'
 import { SearchOutlined, DeleteOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import AddProductModal from './AddProductModal'
-import axiosInstance from '@/utils/axiosInstance'
 import { Spin } from 'antd'
 import { Shelf } from '@/models/shelves'
 import { useDashboard } from '@/context/DashboardContext'
 import { Box } from '@/models/boxes'
 import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api'
+import { useDeleteProductMutation } from '@/store/products/products.api'
 interface BoxDrawerProps {
-    selectedProduct: Product | null;
-    setSelectedProduct: (product: Product | null) => void;
     boxes: Box[]
 }
 
 const BoxDrawer = ({
-    selectedProduct,
-    setSelectedProduct,
     boxes
 }: BoxDrawerProps) => {
-    const { selectedBoxId, setSelectedBoxId } = useDashboard()
     const intl = useIntl()
+
+    const {
+        selectedBoxId,
+        setSelectedBoxId,
+        showAddProductModal
+    } = useDashboard()
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
 
     const [filteredShelvesState, setFilteredShelvesState] = useState<Shelf[]>([])
     const [isLoadingId, setIsLoadingId] = useState('')
-    const [selectedShelfId, setSelectedShelfId] = useState('')
 
     const { data: shelves, isLoading: shelvesLoading } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
         skip: !selectedBoxId
     })
+
+    const [deleteProduct] = useDeleteProductMutation();
 
     useEffect(() => {
         if (shelves) {
@@ -81,7 +80,7 @@ const BoxDrawer = ({
     const handleDeleteProduct = async (productId: string, shelfId: string) => {
         try {
             setIsLoadingId(productId)
-            await axiosInstance.delete(`/products/${productId}/shelf/${shelfId}`);
+            await deleteProduct({ productId, shelfId });
             // Update local state
             const updatedShelves = filteredShelvesState.map(s => {
                 if (s.id === shelfId) {
@@ -121,26 +120,16 @@ const BoxDrawer = ({
                     ) : (
                         <ShelvesIslands
                             shelves={filteredShelvesState}
-                            intl={intl}
-                            boxId={selectedBoxId}
-                            selectedProduct={selectedProduct}
-                            setSelectedProduct={setSelectedProduct}
                             isLoadingId={isLoadingId}
                             handleDeleteProduct={handleDeleteProduct}
-                            setSelectedShelfId={setSelectedShelfId}
                         />
                     )}
                 </div>
             </DrawerCustom>
 
-            <AddProductModal
-                open={!!selectedShelfId}
-                onCancel={() => {
-                    setSelectedProduct(null)
-                    setSelectedShelfId('')
-                }}
-                product={selectedProduct || undefined}
-            />
+            {showAddProductModal &&
+                <AddProductModal />
+            }
         </>
     )
 }
@@ -149,25 +138,31 @@ export default BoxDrawer
 
 interface ShelvesIslandsProps {
     shelves: Shelf[]
-    intl: IntlShape
-    selectedProduct: Product | null
-    setSelectedProduct: (product: Product | null) => void
-    boxId: string
     isLoadingId: string
     handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
-    setSelectedShelfId: (shelfId: string) => void
 }
 const ShelvesIslands = ({
     shelves,
-    intl,
-    selectedProduct,
-    setSelectedProduct,
-
-    boxId,
     isLoadingId,
     handleDeleteProduct,
-    setSelectedShelfId
 }: ShelvesIslandsProps) => {
+    const intl = useIntl()
+    const {
+        selectedBoxId,
+        setSelectedBoxId,
+        selectedShelfProduct,
+        setSelectedShelfProduct,
+        setShowAddProductModal,
+        setSelectedShelfId
+    } = useDashboard()
+
+    const onAddProductModal = ({ shelfId }: { shelfId: string }) => {
+        setSelectedShelfProduct(null)
+        setSelectedBoxId(selectedBoxId)
+        setSelectedShelfId(shelfId)
+        setShowAddProductModal(true)
+    }
+
     if (shelves.length === 0) {
         return (
             <div className='flex flex-col gap-4 justify-center items-center p-4'>
@@ -176,6 +171,8 @@ const ShelvesIslands = ({
             </div>
         )
     }
+
+
 
     return (
         shelves.map((shelf, index) => (
@@ -189,10 +186,10 @@ const ShelvesIslands = ({
                             {shelf.products.map((product, index) => (
                                 <div
                                     key={index}
-                                    className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
-                                    onClick={() => setSelectedProduct({
+                                    className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedShelfProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
+                                    onClick={() => setSelectedShelfProduct({
                                         ...product,
-                                        box_id: boxId,
+                                        box_id: selectedBoxId,
                                         shelf_id: shelf.id
                                     })}
                                 >
@@ -221,9 +218,7 @@ const ShelvesIslands = ({
                             <Button
                                 size='large'
                                 type='primary'
-                                onClick={() => {
-                                    setSelectedShelfId(shelf.id)
-                                }}
+                                onClick={() => onAddProductModal({ shelfId: shelf.id })}
                             >
                                 {intl.formatMessage({ id: 'addProduct' })}
                             </Button>

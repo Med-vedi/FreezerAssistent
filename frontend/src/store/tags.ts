@@ -8,6 +8,8 @@ export const CATEGORIES_TAGS = {
 
 export const PRODUCTS_TAGS = {
     PRODUCTS: 'products',
+    PRODUCT: 'product',
+    PRODUCTS_ALL: 'products_all',
 } as const;
 
 export const USER_TAGS = {
