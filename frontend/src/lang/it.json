@@ -40,10 +40,12 @@
   "category.error": "La categoria è obbligatoria",
   "product": "Prodotto",
   "product.placeholder": "Seleziona il prodotto",
+  "product.add": "Aggiungi prodotto",
   "product.error": "Il prodotto è obbligatorio",
   "search": "Cerca",
   "search.placeholder": "Cerca un prodotto",
   "search.clear": "Cancella",
   "noShelves": "Nessun scaffale trovato",
-  "addProduct": "Aggiungi prodotto"
+  "addProduct": "Aggiungi prodotto",
+  "new": "Nuovo"
 }

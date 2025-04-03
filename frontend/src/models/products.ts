@@ -36,4 +36,4 @@ export type ProductCategory =
     | 'frozen' | 'pasta_fresca' | 'dolci' | 'sughi'
     | 'piatti_pronti' | 'primi_pronti' | 'secondi_pronti' | 'contorni' | 'frutta'
     | 'carne' | 'pane_da_forno' | 'insalate' | 'spreads' | 'cereali' | 'legumi'
-    | 'secondi' | 'street_food' | 'antipasti' | 'altro';
+    | 'secondi' | 'street_food' | 'antipasti' | 'altro' | 'pesce';

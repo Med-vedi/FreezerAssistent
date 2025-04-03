@@ -31,7 +31,7 @@ export const productsApi = createApi({
     endpoints: (build) => ({
         createProduct: build.mutation<ProductBase, ProductBase>({
             query: (product) => ({
-                url: '/products/shelf',
+                url: '/products',
                 method: 'POST',
                 body: product
             }),

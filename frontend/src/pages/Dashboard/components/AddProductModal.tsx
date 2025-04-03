@@ -1,37 +1,37 @@
-import { Product } from '@/models/products'
+import { Product, ProductBase } from '@/models/products'
 import { Modal } from 'antd'
 import React from 'react'
 import ProductDrawerCard from './ProductDrawerCard'
 import { useIntl } from 'react-intl'
-import { usePostProductToShelfMutation } from '@/store/products/products.api'
+import { useCreateProductMutation, usePostProductToShelfMutation } from '@/store/products/products.api'
 import { useDashboard } from '@/context/DashboardContext'
-import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api'
 
 const AddProductModal = () => {
     const intl = useIntl()
-    // const [createProduct] = useCreateProductMutation()
-    // const [updateProduct] = useUpdateProductMutation()
+    const [createProduct] = useCreateProductMutation()
     const [postProductToShelf] = usePostProductToShelfMutation()
     const {
         showAddProductModal,
-        selectedBoxId,
+        // selectedBoxId,
         onCloseAddProductModal
     } = useDashboard()
-    const { refetch } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
-        skip: !selectedBoxId
-    });
 
-    const handleSubmit = async (product: Product) => {
+    const handleCreateProduct = async (product: ProductBase) => {
         try {
-            // const newProduct = product?.id
-            //     ?
-            //     await postProductToShelf({ product }).unwrap()
-            //     :
-            //     await createProduct({ product }).unwrap()
-            // refetch()
-            await postProductToShelf({ product }).unwrap()
-            refetch()
+            const newProduct = await createProduct(product).unwrap()
+            if (newProduct) {
+                void handleAddProduct(newProduct)
+            }
+            // handle success
+        } catch (error) {
+            console.error('Failed to create product:', error)
+            // handle error
+        }
+    }
 
+    const handleAddProduct = async (product: Product | ProductBase) => {
+        try {
+            await postProductToShelf({ product }).unwrap()
             onCloseAddProductModal()
             // handle success
         } catch (error) {
@@ -52,7 +52,13 @@ const AddProductModal = () => {
             footer={null}
         >
             <ProductDrawerCard
-                onConfirm={handleSubmit}
+                onConfirm={(product) => {
+                    if (!product.id) {
+                        handleCreateProduct(product)
+                    } else {
+                        handleAddProduct(product)
+                    }
+                }}
             />
         </Modal>
     )
