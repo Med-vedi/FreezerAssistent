@@ -5,15 +5,16 @@ import IslandLayout from '@/layout/IslandLayout'
 import Input from 'antd/es/input'
 import { useState, useEffect } from 'react'
 import { useIntl } from 'react-intl'
-import { SearchOutlined, DeleteOutlined } from '@ant-design/icons'
+import { SearchOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import AddProductModal from './AddProductModal'
-import { Spin } from 'antd'
+import { Badge, Spin } from 'antd'
 import { Shelf } from '@/models/shelves'
 import { useDashboard } from '@/context/DashboardContext'
 import { Box } from '@/models/boxes'
-import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api'
-import { useDeleteProductMutation } from '@/store/products/products.api'
+import { useDeleteShelfProductMutation, useGetShelvesByBoxIdQuery, usePatchShelfProductCountMutation } from '@/store/shelves/shelves.api'
+import { Product } from '@/models/products'
+
 interface BoxDrawerProps {
     boxes: Box[]
 }
@@ -30,16 +31,23 @@ const BoxDrawer = ({
     } = useDashboard()
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
+    // const [isLoadingId, setIsLoadingId] = useState('')
 
+    const [isLoadingIncreaseId, setIsLoadingIncreaseId] = useState('')
+    const [isLoadingDecreaseId, setIsLoadingDecreaseId] = useState('')
     const [filteredShelvesState, setFilteredShelvesState] = useState<Shelf[]>([])
-    const [isLoadingId, setIsLoadingId] = useState('')
 
     const { data: shelves, isLoading: shelvesLoading } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
         skip: !selectedBoxId
     })
 
-    const [deleteProduct] = useDeleteProductMutation();
+    // const [deleteProductFromShelf] = useDeleteProductFromShelfMutation();
+    // const { refetch: refetchShelves } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
+    //     skip: !selectedBoxId
+    // })
 
+    const [deleteShelfProduct] = useDeleteShelfProductMutation();
+    const [patchShelfProductCount] = usePatchShelfProductCountMutation()
     useEffect(() => {
         if (shelves) {
             setFilteredShelvesState(shelves)
@@ -77,27 +85,56 @@ const BoxDrawer = ({
         )
     }
 
-    const handleDeleteProduct = async (productId: string, shelfId: string) => {
+    // const handleDeleteProduct = async (productId: string, shelfId: string) => {
+    //     setIsLoadingId(productId)
+    //     if (!productId || !shelfId) {
+    //         setIsLoadingId('')
+    //         return console.error('productId or shelfId is not defined')
+    //     }
+    //     try {
+    //         await deleteProductFromShelf({ productId, shelfId })
+    //         refetchShelves()
+    //     } catch (error) {
+    //         console.error('Error removing product from shelf:', error)
+    //     } finally {
+    //         setIsLoadingId('')
+    //     }
+    // }
+
+    const handleIncreaseCount = async (product: Product) => {
+        setIsLoadingIncreaseId(product.id)
         try {
-            setIsLoadingId(productId)
-            await deleteProduct({ productId, shelfId });
-            // Update local state
-            const updatedShelves = filteredShelvesState.map(s => {
-                if (s.id === shelfId) {
-                    return {
-                        ...s,
-                        products: s.products.filter(p => p.id !== productId)
-                    };
-                }
-                return s;
+            await patchShelfProductCount({
+                shelfId: product.shelf_id as string,
+                productId: product.id,
+                count: (product.count || 0) + 1
             });
-            setFilteredShelvesState(updatedShelves);
         } catch (error) {
-            console.error('Error removing product from shelf:', error);
+            console.error('Error increasing count:', error);
         } finally {
-            setIsLoadingId('')
+            setIsLoadingIncreaseId('')
         }
-    }
+    };
+
+    const handleDecreaseCount = async (product: Product) => {
+        setIsLoadingDecreaseId(product.id)
+        try {
+            const newCount = (product.count || 0) - 1;
+            if (newCount < 1) {
+                await deleteShelfProduct({ shelfId: product.shelf_id as string, productId: product.id });
+            } else {
+                await patchShelfProductCount({
+                    shelfId: product.shelf_id as string,
+                    productId: product.id,
+                    count: newCount
+                });
+            }
+        } catch (error) {
+            console.error('Error decreasing count:', error);
+        } finally {
+            setIsLoadingDecreaseId('')
+        }
+    };
 
     return (
         <>
@@ -120,8 +157,11 @@ const BoxDrawer = ({
                     ) : (
                         <ShelvesIslands
                             shelves={filteredShelvesState}
-                            isLoadingId={isLoadingId}
-                            handleDeleteProduct={handleDeleteProduct}
+                            isLoadingIncreaseId={isLoadingIncreaseId}
+                            isLoadingDecreaseId={isLoadingDecreaseId}
+                            // handleDeleteProduct={handleDeleteProduct}
+                            handleIncreaseCount={handleIncreaseCount}
+                            handleDecreaseCount={handleDecreaseCount}
                         />
                     )}
                 </div>
@@ -138,13 +178,19 @@ export default BoxDrawer
 
 interface ShelvesIslandsProps {
     shelves: Shelf[]
-    isLoadingId: string
-    handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
+    isLoadingIncreaseId: string
+    isLoadingDecreaseId: string
+    // handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
+    handleIncreaseCount: (product: Product) => void
+    handleDecreaseCount: (product: Product) => void
 }
 const ShelvesIslands = ({
     shelves,
-    isLoadingId,
-    handleDeleteProduct,
+    isLoadingIncreaseId,
+    isLoadingDecreaseId,
+    // handleDeleteProduct,
+    handleIncreaseCount,
+    handleDecreaseCount
 }: ShelvesIslandsProps) => {
     const intl = useIntl()
     const {
@@ -178,7 +224,17 @@ const ShelvesIslands = ({
         shelves.map((shelf, index) => (
             <div key={shelf.id + index + shelf.level}>
                 <IslandLayout className='max-h-[200px] overflow-y-auto'>
-                    <h1>{`${intl.formatMessage({ id: 'shelf' })} ${shelf.level}`}</h1>
+                    <div className='flex justify-between items-center mb-4'>
+                        <h1 className='text-lg font-bold mb-0!'>{`${intl.formatMessage({ id: 'shelf' })} ${shelf.level}`}</h1>
+                        {shelf.products.length > 0 && <Button
+                            type='primary'
+                            size='large'
+                            onClick={() => onAddProductModal({ shelfId: shelf.id })}
+                        >
+                            <PlusOutlined />
+                        </Button>}
+                    </div>
+
                     {shelf.products.length > 0
                         ?
 
@@ -194,16 +250,40 @@ const ShelvesIslands = ({
                                     })}
                                 >
                                     <div className='flex justify-between items-center'>
-                                        <span className='font-bold'>{product.name}</span>
-                                        <Button
-                                            type='text'
-                                            icon={<DeleteOutlined />}
-                                            loading={isLoadingId === product.id}
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleDeleteProduct(product.id, shelf.id)
-                                            }}
-                                        />
+                                        <Badge
+                                            count={product.count}
+                                            size='small'
+                                            className='font-bold'
+                                            color='cyan'
+                                        >
+                                            <span
+                                                className='pr-2'
+                                            >{product.name}</span>
+                                        </Badge>
+
+                                        <div className='flex gap-2'>
+                                            <Button
+                                                icon={<PlusOutlined />}
+                                                size='large'
+                                                type='primary'
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleIncreaseCount(product);
+                                                }}
+                                                loading={isLoadingIncreaseId === product.id}
+                                            />
+                                            <Button
+                                                type='primary'
+                                                size='large'
+                                                danger
+                                                loading={isLoadingDecreaseId === product.id}
+                                                icon={<MinusOutlined />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDecreaseCount(product);
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                     <span className='text-sm text-gray-500'>
                                         {product.expiration_date}

@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { SHELVES_TAGS } from '../tags';
 import { Shelf } from '@/models/shelves';
+import { PatchShelfProductCountRequest } from './models';
 
 export const shelvesApi = createApi({
     reducerPath: 'shelves',
@@ -23,7 +24,26 @@ export const shelvesApi = createApi({
             query: (boxId) => `/shelves?box_id=${boxId}`,
             providesTags: [SHELVES_TAGS.SHELVES]
         }),
+        patchShelfProductCount: build.mutation<Shelf, PatchShelfProductCountRequest>({
+            query: ({ shelfId, productId, count }) => ({
+                url: `/shelf/${shelfId}/product/${productId}/count`,
+                method: 'PATCH',
+                body: { count }
+            }),
+            invalidatesTags: [SHELVES_TAGS.SHELVES]
+        }),
+        deleteShelfProduct: build.mutation<Shelf, { shelfId: string, productId: string }>({
+            query: ({ shelfId, productId }) => ({
+                url: `/shelf/${shelfId}/product/${productId}`,
+                method: 'DELETE'
+            }),
+            invalidatesTags: [SHELVES_TAGS.SHELVES]
+        })
     }),
 });
 
-export const { useGetShelvesByBoxIdQuery } = shelvesApi;
+export const {
+    useGetShelvesByBoxIdQuery,
+    usePatchShelfProductCountMutation,
+    useDeleteShelfProductMutation
+} = shelvesApi;

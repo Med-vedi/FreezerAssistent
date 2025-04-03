@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { PRODUCTS_TAGS } from '../tags';
-import { Product } from '@/models/products';
+import { PRODUCTS_TAGS, SHELVES_TAGS } from '../tags';
+import { Product, ProductBase } from '@/models/products';
 
 interface GetProductsParams {
     name?: string;
@@ -25,10 +25,11 @@ export const productsApi = createApi({
     tagTypes: [
         PRODUCTS_TAGS.PRODUCTS,
         PRODUCTS_TAGS.PRODUCTS_ALL,
-        PRODUCTS_TAGS.PRODUCT
+        PRODUCTS_TAGS.PRODUCT,
+        SHELVES_TAGS.SHELVES
     ],
     endpoints: (build) => ({
-        createProduct: build.mutation<Product, Product>({
+        createProduct: build.mutation<ProductBase, ProductBase>({
             query: (product) => ({
                 url: '/products/shelf',
                 method: 'POST',
@@ -62,6 +63,27 @@ export const productsApi = createApi({
             }),
             invalidatesTags: [PRODUCTS_TAGS.PRODUCTS, PRODUCTS_TAGS.PRODUCTS_ALL]
         }),
+        deleteProductFromShelf: build.mutation<void, { productId: string, shelfId: string }>({
+            query: ({ productId, shelfId }) => ({
+                url: `/products/${productId}/shelf/${shelfId}`,
+                method: 'DELETE'
+            }),
+            invalidatesTags: [PRODUCTS_TAGS.PRODUCTS, PRODUCTS_TAGS.PRODUCTS_ALL, SHELVES_TAGS.SHELVES]
+        }),
+
+        postProductToShelf: build.mutation<void, { product: Product }>({
+            query: ({ product }) => ({
+                url: `/products/shelf`,
+                method: 'POST',
+                body: product
+            }),
+            invalidatesTags: [
+                PRODUCTS_TAGS.PRODUCTS,
+                PRODUCTS_TAGS.PRODUCTS_ALL,
+                PRODUCTS_TAGS.PRODUCT,
+                SHELVES_TAGS.SHELVES
+            ]
+        })
     }),
 });
 
@@ -70,5 +92,7 @@ export const {
     useGetProductQuery,
     useUpdateProductMutation,
     useGetProductsQuery,
-    useDeleteProductMutation
+    useDeleteProductMutation,
+    usePostProductToShelfMutation,
+    useDeleteProductFromShelfMutation
 } = productsApi;

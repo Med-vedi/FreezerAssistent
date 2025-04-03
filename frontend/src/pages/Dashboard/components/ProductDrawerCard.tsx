@@ -8,41 +8,43 @@ import { DATE_FORMAT } from '@/constants';
 import Freezer from '@/assets/icons/Freezer';
 import Fridge from '@/assets/icons/Fridge';
 
-import { products } from '@/MOCKS/products';
 import { categories } from '@/MOCKS/categories';
 import { Category } from '@/models/categories';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/context/DashboardContext';
-import { useGetProductQuery } from '@/store/products/products.api';
 import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api';
 import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api';
+import { useGetUserDataQuery } from '@/store/userData/userData.api';
 
 interface ProductDrawerCardProps {
-    productId?: string;
     onConfirm: (product: Product) => void;
 }
 
-const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => {
+const ProductDrawerCard = ({ onConfirm }: ProductDrawerCardProps) => {
     const { user } = useAuth();
-    const { selectedBoxId, selectedShelfId } = useDashboard();
-    const { data: product, isLoading } = useGetProductQuery(productId ?? '', {
-        skip: !productId
-    });
-    const { data: boxes = [] } = useGetUserBoxesQuery(user?.id ?? '');
+    const { selectedBoxId, selectedShelfId, selectedProduct } = useDashboard();
+
+    const { data: userData, isLoading: userDataLoading } = useGetUserDataQuery(user?.id ?? '', {
+        skip: !user?.id
+    }); const { data: boxes = [] } = useGetUserBoxesQuery(user?.id ?? '');
     const { data: shelves = [] } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '');
+
+
 
     const initialProduct: Partial<Product> = {
         name: '',
+        id: new Date().getTime().toString(),
         category: 'altro',
         expiration_date: '',
         count: 1,
         box_id: selectedBoxId,
-        shelf_id: selectedShelfId || product?.shelf_id || '',
-        notes: product?.notes || ''
+        shelf_id: selectedShelfId || selectedProduct?.shelf_id || '',
+        notes: selectedProduct?.notes || ''
     };
-    const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
-    const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct);
-    const [productsList, setProductsList] = useState<Product[]>(products);
+
+    const [expirationDate, setExpirationDate] = useState<Date>(selectedProduct?.expiration_date ? new Date(selectedProduct.expiration_date) : new Date());
+    const [productInfo, setProductInfo] = useState<Partial<Product>>(selectedProduct || initialProduct);
+    const [productsList, setProductsList] = useState<Product[]>([]);
     const [categoriesList, setCategoriesList] = useState<Category[]>(categories);
     const [newProductName, setNewProductName] = useState('');
 
@@ -63,48 +65,51 @@ const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => 
         setCategoriesList(categories);
     }, [categories]);
 
-    useEffect(() => {
-        if (product && boxes.length > 0 && shelves.length > 0) {
-            setProductInfo({
-                ...product,
-                box_id: product.box_id || selectedBoxId || boxes[0].id,
-                shelf_id: product.shelf_id || selectedShelfId || shelves[0].id
-            });
-        } else if (!product && boxes.length > 0 && shelves.length > 0) {
-            setProductInfo({
-                ...initialProduct,
-                expiration_date: dayjs().toDate().toISOString(),
-                box_id: selectedBoxId || boxes[0].id,
-                shelf_id: selectedShelfId || shelves[0].id
-            });
-        }
-    }, [product, boxes, shelves, selectedBoxId, selectedShelfId]);
-
-
+    // useEffect(() => {
+    //     if (product && boxes.length > 0 && shelves.length > 0) {
+    //         setProductInfo({
+    //             ...product,
+    //             box_id: product.box_id || selectedBoxId || boxes[0].id,
+    //             shelf_id: product.shelf_id || selectedShelfId || shelves[0].id
+    //         });
+    //     } else if (!product && boxes.length > 0 && shelves.length > 0) {
+    //         setProductInfo({
+    //             ...initialProduct,
+    //             box_id: selectedBoxId || boxes[0].id,
+    //             shelf_id: selectedShelfId || shelves[0].id
+    //         });
+    //     }
+    // }, [product, boxes, shelves, selectedBoxId, selectedShelfId]);
 
     useEffect(() => {
-        if (selectedBoxId && selectedShelfId) {
-            setProductInfo({
-                ...productInfo,
-                box_id: selectedBoxId,
-                shelf_id: selectedShelfId
-            })
+        if (userData?.products_all) {
+            setProductsList(userData?.products_all)
         }
-    }, [selectedBoxId, selectedShelfId])
+    }, [userData?.products_all])
 
-    if (isLoading) {
+    // useEffect(() => {
+    //     if (selectedBoxId && selectedShelfId) {
+    //         setProductInfo({
+    //             ...productInfo,
+    //             box_id: selectedBoxId,
+    //             shelf_id: selectedShelfId
+    //         })
+    //     }
+    // }, [selectedBoxId, selectedShelfId])
+
+    if (userDataLoading) {
         return <div>Loading...</div>;
     }
 
     return (
         <div className='flex flex-col gap-4 mt-4'>
-            {product ?
+            {selectedProduct ?
                 <div className='flex items-center gap-2'>
                     <div className='w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center'>
-                        {productInfo?.emoji || ''}
+                        {selectedProduct?.emoji || ''}
                     </div>
-                    <h1 className='text-lg font-bold m-0!'>{productInfo?.name || ''}</h1>
-                    <p className='text-sm text-gray-500'>{productInfo?.category || ''}</p>
+                    <h1 className='text-lg font-bold m-0!'>{selectedProduct?.name || ''}</h1>
+                    <p className='text-sm text-gray-500'>{selectedProduct?.category || ''}</p>
                 </div>
                 :
                 <div className='flex  gap-2'>
@@ -118,10 +123,15 @@ const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => 
                             size='large'
                             className='w-full'
                             value={productInfo.name}
+                            loading={userDataLoading}
                             onChange={(value) => {
                                 //TODO: filter by id instead of name
                                 const product = productsList.find(product => product.name === value)
-                                setProductInfo({ ...productInfo, name: product?.name, category_id: product?.category_id || 0, emoji: product?.emoji } as Product)
+                                console.log('product', product)
+                                setProductInfo({
+                                    ...productInfo,
+                                    ...product
+                                } as Product)
                             }}
                             dropdownRender={(menu) => (
                                 <>
@@ -148,8 +158,7 @@ const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => 
                                                     emoji: productInfo.emoji || '🍽️',
                                                     en: newProductName,
                                                     it: newProductName
-                                                } as Product,
-                                                ...productsList
+                                                } as Product
                                             ])
                                             setTimeout(() => {
                                                 inputRef.current?.focus();
@@ -296,7 +305,13 @@ const ProductDrawerCard = ({ productId, onConfirm }: ProductDrawerCardProps) => 
                     type='primary'
                     size='large'
                     block
-                    onClick={() => onConfirm(productInfo as Product)}
+                    onClick={() => {
+                        // const finalProduct = {
+                        //     ...productInfo,
+                        //     id: productInfo.id || new Date().getTime().toString() // Ensure ID exists
+                        // } as Product;
+                        onConfirm(productInfo as Product);
+                    }}
                 >
                     {intl.formatMessage({ id: 'confirm' })}
                 </Button>

@@ -9,6 +9,7 @@ import { useGetUserQuery } from '@/store/users/users.api'
 import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api'
 import { useNavigate } from 'react-router-dom'
 import { useGetUserDataQuery } from '@/store/userData/userData.api';
+
 const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: userResponse, isLoading: userLoading } = useGetUserQuery();
