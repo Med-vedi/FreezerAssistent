@@ -2,66 +2,58 @@ import Freezer from '@/assets/icons/Freezer'
 import Fridge from '@/assets/icons/Fridge'
 import DrawerCustom from '@/components/Drawer'
 import IslandLayout from '@/layout/IslandLayout'
-// import { boxes } from '@/MOCKS/boxes'
-// import { shelves } from '@/MOCKS/shelves'
-import { Product } from '@/models/products'
 import Input from 'antd/es/input'
 import { useState, useEffect } from 'react'
-import { IntlShape, useIntl } from 'react-intl'
-import { SearchOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useIntl } from 'react-intl'
+import { SearchOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import AddProductModal from './AddProductModal'
-import axiosInstance from '@/utils/axiosInstance'
-import { message, Spin } from 'antd'
+import { Badge, Spin } from 'antd'
 import { Shelf } from '@/models/shelves'
-import { Box } from '@/models/boxes'
 import { useDashboard } from '@/context/DashboardContext'
+import { Box } from '@/models/boxes'
+import { useDeleteShelfProductMutation, useGetShelvesByBoxIdQuery, usePatchShelfProductCountMutation } from '@/store/shelves/shelves.api'
+import { Product } from '@/models/products'
+
 interface BoxDrawerProps {
-    selectedProduct: Product | null;
-    setSelectedProduct: (product: Product | null) => void;
+    boxes: Box[]
 }
 
 const BoxDrawer = ({
-    selectedProduct,
-    setSelectedProduct
+    boxes
 }: BoxDrawerProps) => {
-    const { selectedBoxId, setSelectedBoxId } = useDashboard()
     const intl = useIntl()
+
+    const {
+        selectedBoxId,
+        setSelectedBoxId,
+        showAddProductModal
+    } = useDashboard()
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
+    // const [isLoadingId, setIsLoadingId] = useState('')
 
+    const [isLoadingIncreaseId, setIsLoadingIncreaseId] = useState('')
+    const [isLoadingDecreaseId, setIsLoadingDecreaseId] = useState('')
     const [filteredShelvesState, setFilteredShelvesState] = useState<Shelf[]>([])
-    const [isLoadingId, setIsLoadingId] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
-    const [boxes, setBoxes] = useState<Box[]>([])
-    const [selectedShelfId, setSelectedShelfId] = useState('')
 
-    const getBoxes = async () => {
-        const response = await axiosInstance.get<Box[]>('/boxes/user')
-        setBoxes(response.data)
-    }
+    const { data: shelves, isLoading: shelvesLoading } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
+        skip: !selectedBoxId
+    })
 
+    // const [deleteProductFromShelf] = useDeleteProductFromShelfMutation();
+    // const { refetch: refetchShelves } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '', {
+    //     skip: !selectedBoxId
+    // })
+
+    const [deleteShelfProduct] = useDeleteShelfProductMutation();
+    const [patchShelfProductCount] = usePatchShelfProductCountMutation()
     useEffect(() => {
-        getBoxes()
-    }, [])
-    const getShelvesByBoxId = async (boxId: string) => {
-        try {
-            setIsLoading(true)
-            const response = await axiosInstance.get<Shelf[]>(`/shelves?box_id=${boxId}`)
-            setFilteredShelvesState(response.data)
-        } catch (error) {
-            console.error('Error fetching shelves:', error)
-            message.error(intl.formatMessage({ id: 'error.fetchingShelves' }))
-        } finally {
-            setIsLoading(false)
+        if (shelves) {
+            setFilteredShelvesState(shelves)
         }
-    }
+    }, [shelves])
 
-    useEffect(() => {
-        if (selectedBoxId) {
-            getShelvesByBoxId(selectedBoxId)
-        }
-    }, [selectedBoxId])
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -93,27 +85,56 @@ const BoxDrawer = ({
         )
     }
 
-    const handleDeleteProduct = async (productId: string, shelfId: string) => {
+    // const handleDeleteProduct = async (productId: string, shelfId: string) => {
+    //     setIsLoadingId(productId)
+    //     if (!productId || !shelfId) {
+    //         setIsLoadingId('')
+    //         return console.error('productId or shelfId is not defined')
+    //     }
+    //     try {
+    //         await deleteProductFromShelf({ productId, shelfId })
+    //         refetchShelves()
+    //     } catch (error) {
+    //         console.error('Error removing product from shelf:', error)
+    //     } finally {
+    //         setIsLoadingId('')
+    //     }
+    // }
+
+    const handleIncreaseCount = async (product: Product) => {
+        setIsLoadingIncreaseId(product.id)
         try {
-            setIsLoadingId(productId)
-            await axiosInstance.delete(`/products/${productId}/shelf/${shelfId}`);
-            // Update local state
-            const updatedShelves = filteredShelvesState.map(s => {
-                if (s.id === shelfId) {
-                    return {
-                        ...s,
-                        products: s.products.filter(p => p.id !== productId)
-                    };
-                }
-                return s;
+            await patchShelfProductCount({
+                shelfId: product.shelf_id as string,
+                productId: product.id,
+                count: (product.count || 0) + 1
             });
-            setFilteredShelvesState(updatedShelves);
         } catch (error) {
-            console.error('Error removing product from shelf:', error);
+            console.error('Error increasing count:', error);
         } finally {
-            setIsLoadingId('')
+            setIsLoadingIncreaseId('')
         }
-    }
+    };
+
+    const handleDecreaseCount = async (product: Product) => {
+        setIsLoadingDecreaseId(product.id)
+        try {
+            const newCount = (product.count || 0) - 1;
+            if (newCount < 1) {
+                await deleteShelfProduct({ shelfId: product.shelf_id as string, productId: product.id });
+            } else {
+                await patchShelfProductCount({
+                    shelfId: product.shelf_id as string,
+                    productId: product.id,
+                    count: newCount
+                });
+            }
+        } catch (error) {
+            console.error('Error decreasing count:', error);
+        } finally {
+            setIsLoadingDecreaseId('')
+        }
+    };
 
     return (
         <>
@@ -129,35 +150,26 @@ const BoxDrawer = ({
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-                    {isLoading ? (
+                    {shelvesLoading ? (
                         <div className="flex justify-center items-center p-4">
                             <Spin size='large' />
                         </div>
                     ) : (
                         <ShelvesIslands
                             shelves={filteredShelvesState}
-                            intl={intl}
-                            boxId={selectedBoxId}
-                            selectedProduct={selectedProduct}
-                            setSelectedProduct={setSelectedProduct}
-                            isLoadingId={isLoadingId}
-                            handleDeleteProduct={handleDeleteProduct}
-                            setSelectedShelfId={setSelectedShelfId}
+                            isLoadingIncreaseId={isLoadingIncreaseId}
+                            isLoadingDecreaseId={isLoadingDecreaseId}
+                            // handleDeleteProduct={handleDeleteProduct}
+                            handleIncreaseCount={handleIncreaseCount}
+                            handleDecreaseCount={handleDecreaseCount}
                         />
                     )}
                 </div>
             </DrawerCustom>
 
-            <AddProductModal
-                open={!!selectedShelfId}
-                onCancel={() => {
-                    setSelectedProduct(null)
-                    setSelectedShelfId('')
-                }}
-                shelfId={selectedShelfId}
-                boxId={selectedBoxId}
-                product={selectedProduct || undefined}
-            />
+            {showAddProductModal &&
+                <AddProductModal />
+            }
         </>
     )
 }
@@ -166,25 +178,37 @@ export default BoxDrawer
 
 interface ShelvesIslandsProps {
     shelves: Shelf[]
-    intl: IntlShape
-    selectedProduct: Product | null
-    setSelectedProduct: (product: Product | null) => void
-    boxId: string
-    isLoadingId: string
-    handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
-    setSelectedShelfId: (shelfId: string) => void
+    isLoadingIncreaseId: string
+    isLoadingDecreaseId: string
+    // handleDeleteProduct: (productId: string, shelfId: string) => Promise<void>
+    handleIncreaseCount: (product: Product) => void
+    handleDecreaseCount: (product: Product) => void
 }
 const ShelvesIslands = ({
     shelves,
-    intl,
-    selectedProduct,
-    setSelectedProduct,
-
-    boxId,
-    isLoadingId,
-    handleDeleteProduct,
-    setSelectedShelfId
+    isLoadingIncreaseId,
+    isLoadingDecreaseId,
+    // handleDeleteProduct,
+    handleIncreaseCount,
+    handleDecreaseCount
 }: ShelvesIslandsProps) => {
+    const intl = useIntl()
+    const {
+        selectedBoxId,
+        setSelectedBoxId,
+        selectedShelfProduct,
+        setSelectedShelfProduct,
+        setShowAddProductModal,
+        setSelectedShelfId
+    } = useDashboard()
+
+    const onAddProductModal = ({ shelfId }: { shelfId: string }) => {
+        setSelectedShelfProduct(null)
+        setSelectedBoxId(selectedBoxId)
+        setSelectedShelfId(shelfId)
+        setShowAddProductModal(true)
+    }
+
     if (shelves.length === 0) {
         return (
             <div className='flex flex-col gap-4 justify-center items-center p-4'>
@@ -194,36 +218,72 @@ const ShelvesIslands = ({
         )
     }
 
+
+
     return (
         shelves.map((shelf, index) => (
-            <div key={shelf.id + index}>
+            <div key={shelf.id + index + shelf.level}>
                 <IslandLayout className='max-h-[200px] overflow-y-auto'>
-                    <h1>{`${intl.formatMessage({ id: 'shelf' })} ${shelf.level}`}</h1>
+                    <div className='flex justify-between items-center mb-4'>
+                        <h1 className='text-lg font-bold mb-0!'>{`${intl.formatMessage({ id: 'shelf' })} ${shelf.level}`}</h1>
+                        {shelf.products.length > 0 && <Button
+                            type='primary'
+                            size='large'
+                            onClick={() => onAddProductModal({ shelfId: shelf.id })}
+                        >
+                            <PlusOutlined />
+                        </Button>}
+                    </div>
+
                     {shelf.products.length > 0
                         ?
 
                         <div className='flex flex-col gap-2'>
-                            {shelf.products.map((product) => (
+                            {shelf.products.map((product, index) => (
                                 <div
-                                    key={product.id}
-                                    className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
-                                    onClick={() => setSelectedProduct({
+                                    key={index}
+                                    className={`p-2 border-2 bg-white shadow-md rounded-md ${selectedShelfProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex flex-col cursor-pointer`}
+                                    onClick={() => setSelectedShelfProduct({
                                         ...product,
-                                        box_id: boxId,
+                                        box_id: selectedBoxId,
                                         shelf_id: shelf.id
                                     })}
                                 >
                                     <div className='flex justify-between items-center'>
-                                        <span className='font-bold'>{product.name}</span>
-                                        <Button
-                                            type='text'
-                                            icon={<DeleteOutlined />}
-                                            loading={isLoadingId === product.id}
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleDeleteProduct(product.id, shelf.id)
-                                            }}
-                                        />
+                                        <Badge
+                                            count={product.count}
+                                            size='small'
+                                            className='font-bold'
+                                            color='cyan'
+                                        >
+                                            <span
+                                                className='pr-2'
+                                            >{product.name}</span>
+                                        </Badge>
+
+                                        <div className='flex gap-2'>
+                                            <Button
+                                                icon={<PlusOutlined />}
+                                                size='large'
+                                                type='primary'
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleIncreaseCount(product);
+                                                }}
+                                                loading={isLoadingIncreaseId === product.id}
+                                            />
+                                            <Button
+                                                type='primary'
+                                                size='large'
+                                                danger
+                                                loading={isLoadingDecreaseId === product.id}
+                                                icon={<MinusOutlined />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDecreaseCount(product);
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                     <span className='text-sm text-gray-500'>
                                         {product.expiration_date}
@@ -232,13 +292,13 @@ const ShelvesIslands = ({
                             ))}
                         </div>
                         :
-                        <div className='w-full flex justify-center items-center'>
+                        <div
+                            key={shelf.id + index + shelf.level}
+                            className='w-full flex justify-center items-center'>
                             <Button
                                 size='large'
                                 type='primary'
-                                onClick={() => {
-                                    setSelectedShelfId(shelf.id)
-                                }}
+                                onClick={() => onAddProductModal({ shelfId: shelf.id })}
                             >
                                 {intl.formatMessage({ id: 'addProduct' })}
                             </Button>

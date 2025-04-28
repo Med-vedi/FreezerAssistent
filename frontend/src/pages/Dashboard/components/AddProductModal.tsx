@@ -1,68 +1,73 @@
-import { Product } from '@/models/products'
+import { Product, ProductBase } from '@/models/products'
 import { Modal } from 'antd'
 import React from 'react'
 import ProductDrawerCard from './ProductDrawerCard'
 import { useIntl } from 'react-intl'
-import axiosInstance from '@/utils/axiosInstance'
+import { useCreateProductMutation, usePostProductToShelfMutation } from '@/store/products/products.api'
+import { useDashboard } from '@/context/DashboardContext'
 
-interface AddProductModalProps {
-    open: boolean
-    onCancel: () => void
-    product?: Product
-    shelfId: string
-    boxId: string
-}
-const AddProductModal = ({
-    open,
-    onCancel,
-    product,
-    shelfId,
-    boxId
-}: AddProductModalProps) => {
+const AddProductModal = () => {
     const intl = useIntl()
+    const [createProduct] = useCreateProductMutation()
+    const [postProductToShelf] = usePostProductToShelfMutation()
+    const {
+        showAddProductModal,
+        selectedBoxId,
+        selectedShelfId,
+        onCloseAddProductModal
+    } = useDashboard()
 
-    const handleConfirm = async (product: Product) => {
-        // onCancel()
-        console.log('product to SAVE', product)
+    const handleCreateProduct = async (product: ProductBase) => {
         try {
-            const res = await axiosInstance.post('/products/shelf', product);
-            console.log('res', res);
-        } catch (err) {
-            console.error('Error:', err);
+            const newProduct = await createProduct(product).unwrap()
+            if (newProduct) {
+                void handleAddProduct(newProduct)
+            }
+            // handle success
+        } catch (error) {
+            console.error('Failed to create product:', error)
+            // handle error
         }
     }
-    // const handleConfirm = async (product: Product) => {
-    //     // onCancel()
-    //     console.log('product', product)
-    //     try {
-    //         const token = localStorage.getItem('token');
-    //         const res = await axiosInstance.post('/products',
-    //             { ...product },
-    //             {
-    //                 headers: {
-    //                     'Authorization': `Bearer ${token}`
-    //                 }
-    //             }
-    //         );
-    //         console.log('res', res);
-    //     } catch (err) {
-    //         console.log(err);
-    //     }
-    //     console.log('product: ', product)
-    // }
+
+    const handleAddProduct = async (product: Product | ProductBase) => {
+        const { box, shelf, ...productData } = product as Product
+        const payload = {
+            product: {
+                ...productData,
+                box_id: selectedBoxId || box?.id,
+                shelf_id: selectedShelfId || shelf?.id
+            }
+        }
+        try {
+            await postProductToShelf(payload).unwrap()
+            onCloseAddProductModal()
+            // handle success
+        } catch (error) {
+            console.error('Failed to create product:', error)
+            // handle error
+        }
+    }
+
+    const onCloseModal = () => {
+        onCloseAddProductModal()
+    }
 
     return (
         <Modal
             title={intl.formatMessage({ id: 'add.item' })}
-            open={open}
-            onCancel={onCancel}
+            open={showAddProductModal}
+            onCancel={onCloseModal}
             footer={null}
         >
             <ProductDrawerCard
-                product={product}
-                onConfirm={handleConfirm}
-                shelfId={shelfId}
-                boxId={boxId}
+                onConfirm={(product) => {
+                    if (!product.id) {
+                        handleCreateProduct(product)
+                    } else {
+                        handleAddProduct(product)
+                    }
+                }}
             />
         </Modal>
     )

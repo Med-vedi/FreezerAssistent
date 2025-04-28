@@ -12,6 +12,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 
 const User = require('./models/user.model');
+const UserData = require('./models/userData.model');
 const Box = require('./models/boxes.model');
 const Product = require('./models/products.model');
 const Shelf = require('./models/shelves.model');
@@ -200,6 +201,67 @@ app.put('/users/:id', authenticateToken, async (req, res) => {
     res.json(user);
 });
 
+//USER DATA
+
+//get user data by user_id
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.query;
+    const userData = await UserData.findOne({ user_id });
+    res.json(userData);
+});
+
+//Create user data
+app.post('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.body;
+    const userData = await UserData.create({ user_id, products: [] });
+    res.json(userData);
+});
+//Put user products
+app.put('/user-data/products', authenticateToken, async (req, res) => {
+    const { user_id, products } = req.body;
+    const userData = await UserData.findOneAndUpdate({ user_id }, { products }, { new: true });
+    res.json(userData);
+});
+
+//force import product to user data
+app.post('/user-data/products/import', authenticateToken, async (req, res) => {
+    try {
+        const { user_id } = req.body;
+
+        // Get all products from db
+        const products = await Product.find();
+
+        // Find or create user data
+        let userData = await UserData.findOne({ user_id });
+        if (!userData) {
+            userData = new UserData({ user_id, products: [], products_all: [] }); // Create if not found
+        }
+
+        // Update products_all array
+        userData.products_all = products;
+        await userData.save();
+        res.json(userData);
+    } catch (error) {
+        console.error('Error importing products:', error);
+        res.status(500).json({ message: 'Error importing products to user data' });
+    }
+});
+
+//Get user data
+app.get('/user-data', authenticateToken, async (req, res) => {
+    const { user_id } = req.query;
+    const userData = await UserData.findOne({ user_id });
+    res.json(userData);
+});
+
+//Update user data by id
+//TODO
+app.put('/user-data/:id', authenticateToken, async (req, res) => {
+    const { user_id, products } = req.body;
+    const userData = await UserData.findByIdAndUpdate(req.params.id, { user_id, products }, { new: true });
+    res.json(userData);
+});
+
 //BOXES
 //Create box
 app.post('/boxes/user', authenticateToken, async (req, res) => {
@@ -234,6 +296,9 @@ app.post('/boxes/user', authenticateToken, async (req, res) => {
 
 //Get boxes list by user_id
 app.get('/boxes/user', authenticateToken, async (req, res) => {
+    if (!req.query.user_id) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
     try {
         const { user_id } = req.query;
         const query = {};
@@ -317,12 +382,18 @@ app.post('/products', authenticateToken, async (req, res) => {
             category_id: req.body?.category_id || 0,
             emoji: req.body?.emoji || '❄️',
             name: req.body.name,
-            count: req.body.count || 1,
-            ...req.body
         };
 
-        const savedProduct = await Product.create(product);
-        res.json(savedProduct);
+        // Find and update userData directly
+        const userData = await UserData.findOne({ user_id: req.user.user.id });
+        if (!userData) {
+            return res.status(404).json({ message: 'User data not found' });
+        }
+
+        userData.products_all.push(product);
+        await userData.save();
+
+        res.json(product);
     } catch (error) {
         console.error('Product creation error:', error);
         res.status(500).json({
@@ -334,40 +405,37 @@ app.post('/products', authenticateToken, async (req, res) => {
 //add product to shelf
 app.post('/products/shelf', authenticateToken, async (req, res) => {
     try {
-        const { shelf_id, box_id } = req.body;
-        const shelf = await Shelf.findOne({
-            $or: [
-                { id: shelf_id },
-                { box_id: box_id }
-            ]
+        const product = req.body;
+        console.log('Received product:', product);
+
+        // Find the target shelf directly
+        const targetShelf = await Shelf.findOne({
+            id: product.shelf_id,
+            box_id: product.box_id
         });
+        console.log('Found target shelf:', targetShelf);
 
-        if (!shelf) {
-            return res.status(404).json({ message: 'Shelf not found' });
+        if (!targetShelf) {
+            console.log('No shelf found with id:', product.shelf_id);
+            return res.status(404).json({
+                message: `Shelf ${product.shelf_id} not found`,
+                searchCriteria: { id: product.shelf_id, box_id: product.box_id }
+            });
         }
 
-        if (!shelf.products) {
-            shelf.products = [];
-        }
+        // Add product to the correct shelf
+        targetShelf.products.push(product);
+        const savedShelf = await targetShelf.save();
+        console.log('Saved shelf:', savedShelf);
 
-        // Create product object with all required fields including count and notes
-        const productToAdd = {
-            category_id: req.body.category_id,
-            emoji: req.body.emoji,
-            name: req.body.name,
-            count: req.body.count || 1,  // Default to 1 if not provided
-            notes: req.body.notes || '',  // Default to empty string if not provided
-            expiration_date: req.body.expiration_date,
-            shelf_id: shelf_id,
-            box_id: box_id
-        };
+        // Return all updated shelves
+        const updatedShelves = await Shelf.find({ box_id: product.box_id }).lean();
+        console.log('Returning shelves:', updatedShelves);
 
-        shelf.products.push(productToAdd);
-        const updatedShelf = await shelf.save();
+        res.json(updatedShelves);
 
-        res.json(updatedShelf);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error in /products/shelf:', error);
         res.status(500).json({
             message: 'Error adding product to shelf',
             error: error.message
@@ -400,13 +468,25 @@ app.get('/products', authenticateToken, async (req, res) => {
 app.delete('/products/:productId/shelf/:shelfId', authenticateToken, async (req, res) => {
     const { productId, shelfId } = req.params;
     try {
-        // Find the shelf and remove the product from its products array
-        await Shelf.findOneAndUpdate(
-            { id: shelfId },
-            { $pull: { products: productId } }
-        );
-        res.json({ message: 'Product removed from shelf successfully' });
+        console.log('Deleting product:', { productId, shelfId });
+
+        const shelf = await Shelf.findOne({ id: shelfId });
+        if (!shelf) {
+            return res.status(404).json({ message: 'Shelf not found' });
+        }
+
+        // Filter out the product from the products array
+        shelf.products = shelf.products.filter(product => product.id !== productId);
+
+        // Save the updated shelf
+        const updatedShelf = await shelf.save();
+
+        // Return all shelves for the box to update UI
+        const allShelves = await Shelf.find({ box_id: shelf.box_id });
+
+        res.json(allShelves);
     } catch (error) {
+        console.error('Delete error:', error);
         res.status(500).json({ message: 'Error removing product from shelf', error: error.message });
     }
 });
@@ -504,6 +584,79 @@ app.delete('/shelves/:shelfId', authenticateToken, async (req, res) => {
         res.json({ message: 'Shelf deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting shelf', error: error.message });
+    }
+});
+
+//patch shelf product count
+app.patch('/shelf-product-count', authenticateToken, async (req, res) => {
+    const { shelf_id, product_count } = req.body;
+    const shelf = await Shelf.findOneAndUpdate({ id: shelf_id }, { product_count }, { new: true });
+    res.json(shelf);
+});
+
+// Change to singular form and simplify route
+app.patch('/shelf/:shelfId/product/:productId/count', authenticateToken, async (req, res) => {
+    try {
+        const { shelfId, productId } = req.params;
+        const { count } = req.body;
+
+        console.log('Updating product:', { shelfId, productId, count }); // Add logging
+
+        const shelf = await Shelf.findOneAndUpdate(
+            { id: shelfId },
+            {
+                $set: {
+                    "products.$[elem].count": count
+                }
+            },
+            {
+                arrayFilters: [{ "elem.id": productId }],
+                new: true
+            }
+        );
+
+        if (!shelf) {
+            return res.status(404).json({ message: 'Shelf not found' });
+        }
+
+        res.json(shelf);
+    } catch (error) {
+        console.error('Error updating product count:', error);
+        res.status(500).json({ message: 'Error updating product count' });
+    }
+});
+
+//delete shelf product
+app.delete('/shelf/:shelfId/product/:productId', authenticateToken, async (req, res) => {
+    try {
+        const { shelfId, productId } = req.params;
+
+        // First find the shelf
+        const shelf = await Shelf.findOne({ id: shelfId });
+
+        if (!shelf) {
+            return res.status(404).json({ message: 'Shelf not found' });
+        }
+
+        // Remove the product from the products array
+        const updatedShelf = await Shelf.findOneAndUpdate(
+            { id: shelfId },
+            {
+                $pull: {
+                    products: { id: productId }
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedShelf) {
+            return res.status(404).json({ message: 'Product not found in shelf' });
+        }
+
+        res.json(updatedShelf);
+    } catch (error) {
+        console.error('Error deleting product from shelf:', error);
+        res.status(500).json({ message: 'Error deleting product from shelf' });
     }
 });
 

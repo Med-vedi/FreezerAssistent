@@ -1,13 +1,22 @@
 import { Button, Form, Input } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useRegisterMutation } from '@/store/users/users.api'
+
 const SignUpPage = () => {
     const [form] = Form.useForm()
-    const { register } = useAuth()
+    const [register] = useRegisterMutation()
     const navigate = useNavigate()
     const onFinish = async (values: { username: string, password: string, email: string }) => {
-        await register(values.username, values.email, values.password)
-        navigate('/onboarding')
+        try {
+            await register({
+                name: values.username,
+                email: values.email,
+                password: values.password
+            }).unwrap()
+            navigate('/onboarding')
+        } catch (error) {
+            console.error('Registration failed:', error)
+        }
     }
     return (
         <div className="flex justify-center items-center h-full">

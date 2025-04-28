@@ -8,6 +8,7 @@ import Onboarding from './pages/OnboardingPage';
 import { useAuth } from './context/AuthContext';
 import { useState, useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
+import { DashboardProvider } from './context/DashboardContext';
 
 function App() {
   const [user, setUser] = useState<{
@@ -32,12 +33,16 @@ function App() {
         <Routes>
           <Route path="/" element={
             <ProtectedRoute user={user}>
-              <Dashboard />
+              <DashboardProvider>
+                <Dashboard />
+              </DashboardProvider>
             </ProtectedRoute>
           } />
           <Route path={PATHS.DASHBOARD} element={
             <ProtectedRoute user={user}>
-              <Dashboard />
+              <DashboardProvider>
+                <Dashboard />
+              </DashboardProvider>
             </ProtectedRoute>
           } />
           <Route path={PATHS.LOGIN} element={<Login />} />

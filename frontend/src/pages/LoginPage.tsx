@@ -1,17 +1,17 @@
 import { Form, Input, Button, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
+import { useLoginMutation } from '@/store/users/users.api'
 import { AxiosError } from 'axios'
-import { useAuth } from '../context/AuthContext'
 
 const LoginPage = () => {
     const [form] = Form.useForm()
-    const { login } = useAuth()
+    const [login] = useLoginMutation()
     const navigate = useNavigate()
 
     const onFinish = async (values: { email: string, password: string }) => {
         try {
-            const user = await login(values.email, values.password)
-            if (user?.isReady) {
+            const result = await login(values).unwrap()
+            if (result.user.isReady) {
                 navigate('/dashboard')
             } else {
                 navigate('/onboarding')

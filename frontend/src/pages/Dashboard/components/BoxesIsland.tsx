@@ -1,40 +1,22 @@
 import IslandLayout from '@/layout/IslandLayout'
 import BoxCard from './BoxCard'
-import { useState } from 'react'
-import axiosInstance from '@/utils/axiosInstance'
-import { useEffect } from 'react'
 import { Box } from '@/models/boxes'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
-import { useDashboard } from '@/context/DashboardContext'
+interface BoxesIslandProps {
+    boxesLoading: boolean
+    boxes: Box[]
+}
 
-const BoxesIsland = () => {
-    const { user } = useAuth()
-    const { selectedBoxId, setSelectedBoxId } = useDashboard()
-    const navigate = useNavigate()
-    // const [isLoading, setIsLoading] = useState(true)
+const BoxesIsland = ({ boxesLoading, boxes }: BoxesIslandProps) => {
 
-    const [boxes, setBoxes] = useState<Box[]>([])
-
-    useEffect(() => {
-        const fetchBoxes = async () => {
-            if (!user?.id) return;
-
-            try {
-                const res = await axiosInstance.get(`/boxes/user?user_id=${user.id}`);
-                const boxes = res.data;
-                if (boxes.length > 0) {
-                    setBoxes(boxes);
-                } else {
-                    navigate('/onboarding');
-                    setBoxes([]);
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        fetchBoxes();
-    }, [user?.id, navigate]);
+    if (boxesLoading) {
+        return (
+            <IslandLayout className='w-full md:w-1/2 max-h-[400px] overflow-y-auto'>
+                <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+            </IslandLayout>
+        )
+    }
 
     return (
         <IslandLayout className='w-full md:w-1/2 max-h-[400px] overflow-y-auto'>
@@ -43,8 +25,6 @@ const BoxesIsland = () => {
                     <BoxCard
                         key={box.id}
                         box={box}
-                        onClick={setSelectedBoxId}
-                        isSelected={selectedBoxId === box.id}
                     />
                 ))}
             </div>

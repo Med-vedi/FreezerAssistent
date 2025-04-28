@@ -7,12 +7,19 @@ import { Product } from '@/models/products'
 import { useDebounce } from '@/hooks/useDebounce'
 import { products } from '@/MOCKS/products'
 import dayjs from 'dayjs'
-
-const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handleProductClick: (product: Product) => void, selectedProduct: Product | null }) => {
+import { useDashboard } from '@/context/DashboardContext'
+const ExpiredProductsIsland = () => {
     const mproducts = products as Product[]
     const [searchExpiredProducts, setSearchExpiredProducts] = useState<string>('')
     const [filteredProductsWithExpirationDate, setFilteredProductsWithExpirationDate] = useState<Product[]>([])
     const [productsWithExpirationDate, setProductsWithExpirationDate] = useState<Product[]>([])
+    const {
+        selectedProduct,
+        setSelectedProduct,
+        showAddProductModal,
+        onCloseAddProductModal,
+        setShowAddProductModal
+    } = useDashboard()
 
     const debouncedSearchExpired = useDebounce(searchExpiredProducts, 500)
 
@@ -41,6 +48,16 @@ const ExpiredProductsIsland = ({ handleProductClick, selectedProduct }: { handle
             return parsedDate.format('DD/MM/YYYY');
         } catch {
             return '-';
+        }
+    }
+
+    const handleProductClick = (product: Product) => {
+        setSelectedProduct(product)
+        setTimeout(() => {
+            setShowAddProductModal(true)
+        }, 100)
+        if (showAddProductModal) {
+            onCloseAddProductModal()
         }
     }
 

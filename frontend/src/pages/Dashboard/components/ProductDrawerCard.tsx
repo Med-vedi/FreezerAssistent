@@ -1,6 +1,6 @@
-import { Product } from '@/models/products';
+import { Product, ProductBase } from '@/models/products';
 import { MinusOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space, Spin } from 'antd';
+import { Button, DatePicker, Divider, Input, InputNumber, InputRef, Select, Space } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useIntl } from 'react-intl';
@@ -8,53 +8,47 @@ import { DATE_FORMAT } from '@/constants';
 import Freezer from '@/assets/icons/Freezer';
 import Fridge from '@/assets/icons/Fridge';
 
-// import { boxes } from '@/MOCKS/boxes';
-// import { shelves } from '@/MOCKS/shelves';
-
-import { products } from '@/MOCKS/products';
 import { categories } from '@/MOCKS/categories';
 import { Category } from '@/models/categories';
-
-import { Box } from '@/models/boxes';
-import { Shelf } from '@/models/shelves';
-import axiosInstance from '@/utils/axiosInstance';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/context/DashboardContext';
+import { useGetUserBoxesQuery } from '@/store/boxes/boxes.api';
+import { useGetShelvesByBoxIdQuery } from '@/store/shelves/shelves.api';
+import { useGetUserDataQuery } from '@/store/userData/userData.api';
+
 interface ProductDrawerCardProps {
-    product?: Product
-    onConfirm: (product: Product) => void
-    shelfId?: string
-    boxId?: string
+    onConfirm: (product: Product | ProductBase) => void;
 }
 
-const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawerCardProps) => {
-    const { user } = useAuth()
-    const { selectedBoxId } = useDashboard()
+const ProductDrawerCard = ({ onConfirm }: ProductDrawerCardProps) => {
+    const { user } = useAuth();
+    const { selectedBoxId, selectedShelfId, selectedProduct } = useDashboard();
+
+    const { data: userData, isLoading: userDataLoading } = useGetUserDataQuery(user?.id ?? '', {
+        skip: !user?.id
+    }); const { data: boxes = [] } = useGetUserBoxesQuery(user?.id ?? '');
+    const { data: shelves = [] } = useGetShelvesByBoxIdQuery(selectedBoxId ?? '');
+
+
 
     const initialProduct: Partial<Product> = {
-        ...product,
-        id: new Date().getTime().toString(),
         name: '',
         category: 'altro',
-        expiration_date: new Date().toISOString(),
-        count: 0,
-        box_id: boxId,
-        shelf_id: shelfId || product?.shelf_id || '',
-        notes: product?.notes || ''
-    }
-    const [expirationDate, setExpirationDate] = useState<Date>(product?.expiration_date ? new Date(product.expiration_date) : new Date());
-    const [productInfo, setProductInfo] = useState<Partial<Product>>(product || initialProduct)
-    const [productsList, setProductsList] = useState<Product[]>(products)
-    const [categoriesList, setCategoriesList] = useState<Category[]>(categories)
-    const [newProductName, setNewProductName] = useState('')
-    const [boxes, setBoxes] = useState<Box[]>([])
-    const [shelves, setShelves] = useState<Shelf[]>([])
-    const [boxesLoading, setBoxesLoading] = useState(false)
-    const [shelvesLoading, setShelvesLoading] = useState(false)
+        expiration_date: '',
+        count: 1,
+        box_id: selectedBoxId,
+        shelf_id: selectedShelfId || selectedProduct?.shelf_id || '',
+        notes: selectedProduct?.notes || ''
+    };
+
+    const [expirationDate, setExpirationDate] = useState<Date>(selectedProduct?.expiration_date ? new Date(selectedProduct.expiration_date) : new Date());
+    const [productInfo, setProductInfo] = useState<Partial<Product>>(selectedProduct || initialProduct);
+    const [productsList, setProductsList] = useState<Product[]>([]);
+    const [categoriesList, setCategoriesList] = useState<Category[]>(categories);
+    const [newProductName, setNewProductName] = useState('');
 
     const intl = useIntl();
     const inputRef = useRef<InputRef>(null);
-
 
     const mboxes = useMemo(() => boxes.map(box => ({
         value: box.id,
@@ -64,111 +58,31 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
             </div>
             <span>{box.title}</span>
         </div>
-    })), [boxes])
-
-    const getBoxes = async () => {
-        try {
-            setBoxesLoading(true)
-            const response = await axiosInstance.get<Box[]>(`/boxes/user?user_id=${user?.id}`)
-            setBoxes(response.data)
-        } catch (error) {
-            console.error('Error fetching boxes:', error)
-        } finally {
-            setBoxesLoading(false)
-        }
-    }
-
-    const getShelves = async () => {
-        try {
-            setShelvesLoading(true)
-            const response = await axiosInstance.get<Shelf[]>(`/shelves?box_id=${boxId}`)
-            setShelves(response.data)
-        } catch (error) {
-            console.error('Error fetching shelves:', error)
-        } finally {
-            setShelvesLoading(false)
-        }
-    }
-    useEffect(() => {
-        setCategoriesList(categories)
-    }, [categories])
+    })), [boxes]);
 
     useEffect(() => {
-        console.log('product', product)
-        if (product && boxes.length > 0 && shelves.length > 0) {
-            setProductInfo({
-                ...product,
-                expiration_date: product.expiration_date,
-                count: product.count || 0,
-                category: product.category || 'altro',
-                category_id: product.category_id || 0,
-                name: product.name || '',
-                box_id: product.box_id || selectedBoxId || boxes[0].id,
-                shelf_id: product.shelf_id || shelfId || shelves[0].id
-            })
-        }
-
-        if (!product && boxes.length > 0 && shelves.length > 0) {
-            setProductInfo({
-                ...initialProduct,
-                expiration_date: dayjs().toDate().toISOString(),
-                count: 1,
-                category: 'altro',
-                category_id: 0,
-                name: '',
-                box_id: selectedBoxId || boxes[0].id,
-                shelf_id: shelfId || shelves[0].id
-            })
-        }
-    }, [product, boxes, shelves, shelfId])
+        setCategoriesList(categories);
+    }, [categories]);
 
     useEffect(() => {
-        setBoxes(boxes)
-        setShelves(shelves)
-    }, [boxes, shelves])
+        if (userData?.products_all) {
+            setProductsList(userData?.products_all)
+        }
+    }, [userData?.products_all])
 
-    useEffect(() => {
-        getBoxes()
-        getShelves()
-    }, [])
-
-
-    const handleConfirm = () => {
-        const categoryName = categoriesList.find(category => category.id === productInfo.category_id)?.name
-
-        const productWithISODate = {
-            expiration_date: expirationDate.toISOString(),
-            notes: productInfo?.notes || '',
-            box_id: productInfo?.box_id || '',
-            shelf_id: productInfo?.shelf_id || '',
-            count: productInfo?.count || 1,
-            name: productInfo?.name || '',
-            category: categoryName || 'altro',
-            category_id: productInfo?.category_id || 0,
-            emoji: productInfo?.emoji || '🍽️',
-            en: productInfo?.name || '',
-            it: productInfo?.name || ''
-        };
-        onConfirm(productWithISODate as Product);
+    if (userDataLoading) {
+        return <div>Loading...</div>;
     }
-
-    if (boxesLoading || shelvesLoading) {
-        return <div className='flex justify-center items-center h-full'>
-            <Spin size='large' />
-        </div>
-    }
-    console.log('shelves', shelves)
-
 
     return (
         <div className='flex flex-col gap-4 mt-4'>
-            {product ?
+            {selectedProduct ?
                 <div className='flex items-center gap-2'>
                     <div className='w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center'>
-                        {productInfo?.emoji || ''}
+                        {selectedProduct?.emoji || ''}
                     </div>
-                    <h1 className='text-lg font-bold m-0!'>{productInfo?.name || ''}</h1>
-                    <p className='text-sm text-gray-500'>{productInfo?.category || ''}</p>
+                    <h1 className='text-lg font-bold m-0!'>{selectedProduct?.name || ''}</h1>
+                    <p className='text-sm text-gray-500'>{selectedProduct?.category || ''}</p>
                 </div>
                 :
                 <div className='flex  gap-2'>
@@ -182,10 +96,21 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                             size='large'
                             className='w-full'
                             value={productInfo.name}
+                            loading={userDataLoading}
+                            onDropdownVisibleChange={(visible) => {
+                                if (visible) {
+                                    inputRef.current?.focus()
+                                    setNewProductName('')
+                                }
+                            }}
                             onChange={(value) => {
                                 //TODO: filter by id instead of name
                                 const product = productsList.find(product => product.name === value)
-                                setProductInfo({ ...productInfo, name: product?.name, category_id: product?.category_id || 0, emoji: product?.emoji } as Product)
+                                setProductInfo({
+                                    ...productInfo,
+                                    ...product
+                                } as Product)
+
                             }}
                             dropdownRender={(menu) => (
                                 <>
@@ -194,33 +119,47 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                                     <Space style={{ padding: '0 8px 4px' }}>
                                         <Input
                                             className='w-full'
-                                            placeholder={intl.formatMessage({ id: 'product.placeholder' })}
+                                            placeholder={intl.formatMessage({ id: 'add' })}
                                             ref={inputRef}
                                             value={newProductName}
                                             onChange={(e) => setNewProductName(e.target.value)}
-                                            onKeyDown={(e) => e.stopPropagation()}
+                                            onKeyDown={(e) => {
+                                                e.stopPropagation()
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault()
+                                                    setProductInfo({
+                                                        ...productInfo,
+                                                        name: newProductName.charAt(0).toUpperCase() + newProductName.slice(1)
+                                                    } as Product)
+                                                    setNewProductName('')
+                                                }
+                                            }}
                                         />
                                         <Button type="text" icon={<PlusOutlined />} onClick={(e) => {
                                             e.preventDefault();
                                             setNewProductName('');
+
                                             setProductsList([
                                                 {
                                                     ...productInfo,
-                                                    id: new Date().getTime().toString(),
                                                     name: newProductName,
                                                     category: productInfo.category || 'altro',
                                                     emoji: productInfo.emoji || '🍽️',
                                                     en: newProductName,
                                                     it: newProductName
-                                                } as Product,
-                                                ...productsList
+                                                } as Product
                                             ])
+                                            setProductInfo({
+                                                ...productInfo,
+                                                name: newProductName.charAt(0).toUpperCase() + newProductName.slice(1)
+                                            } as Product)
+                                            inputRef.current?.blur()
+
                                             setTimeout(() => {
                                                 inputRef.current?.focus();
                                             }, 0);
                                             // inputRef.current?.input?.focus()
                                         }}>
-                                            {intl.formatMessage({ id: 'add' })}
                                         </Button>
                                     </Space>
                                 </>
@@ -238,16 +177,6 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                             size='large'
                             className='w-full'
                             value={productInfo.category_id}
-                            // defaultValue={productInfo.categoryId}
-                            // onSearch={(value) => {
-                            //     const category = categories.find(category => category.name.toLowerCase().includes(value.toLowerCase()))
-                            //     if (category) {
-                            //         console.log('category: ', category);
-                            //         setCategoriesList([category])
-                            //     }
-
-                            // }}
-                            //TODO: filter by id instead of name
                             onChange={(value) => {
                                 const category = categoriesList.find(category => category.id === value)
                                 setProductInfo({ ...productInfo, category_id: category?.id, emoji: category?.emoji, category: category?.name } as Product)
@@ -265,8 +194,8 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                 <DatePicker
                     className='w-full'
                     size='large'
-                    defaultValue={dayjs(expirationDate, DATE_FORMAT)}
-                    value={dayjs(expirationDate)}
+                    defaultValue={expirationDate ? dayjs(expirationDate, DATE_FORMAT) : undefined}
+                    value={expirationDate ? dayjs(expirationDate) : undefined}
                     format={DATE_FORMAT}
                     showTime={false}
                     onChange={(date) => {
@@ -321,7 +250,7 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                         options={shelves.map(shelf => ({ value: shelf.id, label: shelf.level }))}
                         size='large'
                         className='w-full z-0'
-                        defaultValue={shelfId}
+                        defaultValue={selectedShelfId}
                         style={{ width: '100%', zIndex: '0 !important' }}
                         onChange={(value) => {
                             const shelf = shelves.find(shelf => shelf.id === value.toString())
@@ -360,7 +289,13 @@ const ProductDrawerCard = ({ product, onConfirm, shelfId, boxId }: ProductDrawer
                     type='primary'
                     size='large'
                     block
-                    onClick={handleConfirm}
+                    onClick={() => {
+                        // const finalProduct = {
+                        //     ...productInfo,
+                        //     id: productInfo.id || new Date().getTime().toString() // Ensure ID exists
+                        // } as Product;
+                        onConfirm(productInfo as Product);
+                    }}
                 >
                     {intl.formatMessage({ id: 'confirm' })}
                 </Button>
