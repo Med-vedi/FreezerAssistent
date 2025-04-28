@@ -12,7 +12,8 @@ const AddProductModal = () => {
     const [postProductToShelf] = usePostProductToShelfMutation()
     const {
         showAddProductModal,
-        // selectedBoxId,
+        selectedBoxId,
+        selectedShelfId,
         onCloseAddProductModal
     } = useDashboard()
 
@@ -30,8 +31,16 @@ const AddProductModal = () => {
     }
 
     const handleAddProduct = async (product: Product | ProductBase) => {
+        const { box, shelf, ...productData } = product as Product
+        const payload = {
+            product: {
+                ...productData,
+                box_id: selectedBoxId || box?.id,
+                shelf_id: selectedShelfId || shelf?.id
+            }
+        }
         try {
-            await postProductToShelf({ product }).unwrap()
+            await postProductToShelf(payload).unwrap()
             onCloseAddProductModal()
             // handle success
         } catch (error) {

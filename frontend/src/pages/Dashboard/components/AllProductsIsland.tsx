@@ -16,7 +16,13 @@ const AllProductsIsland = () => {
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [searchAllProducts, setSearchAllProducts] = useState<string>('')
 
-    const { selectedProduct, setSelectedProduct } = useDashboard()
+    const {
+        selectedProduct,
+        setSelectedProduct,
+        showAddProductModal,
+        setShowAddProductModal,
+        onCloseAddProductModal
+    } = useDashboard()
 
     const { data: userData, isLoading: userDataLoading } = useGetUserDataQuery(user?.id ?? '', {
         skip: !user?.id
@@ -58,7 +64,15 @@ const AllProductsIsland = () => {
                         <div
                             key={product.id}
                             className={`p-4 border-2 bg-white shadow-md rounded-md ${selectedProduct?.id === product.id ? 'border-[#33BEA6]' : 'border-transparent'} hover:border-[#33BEA6] flex items-center gap-2 cursor-pointer`}
-                            onClick={() => setSelectedProduct(product)}
+                            onClick={() => {
+                                setSelectedProduct(product)
+                                setTimeout(() => {
+                                    setShowAddProductModal(true)
+                                }, 100)
+                                if (showAddProductModal) {
+                                    onCloseAddProductModal()
+                                }
+                            }}
                         >{product.emoji} {product.name}</div>
                     ))}
                 </div>

@@ -1,3 +1,6 @@
+import { Box } from './boxes';
+import { Shelf } from './shelves';
+
 export interface Product {
     _id?: string;
     id: string;
@@ -12,6 +15,8 @@ export interface Product {
     shelf_id?: string;
     count?: number;
     notes?: string;
+    box?: Box;
+    shelf?: Shelf;
 }
 
 export interface ProductBase {

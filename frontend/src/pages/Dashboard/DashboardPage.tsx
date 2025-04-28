@@ -20,8 +20,6 @@ const DashboardPage = () => {
         skip: !userResponse?.user?.id
     });
     const {
-        selectedProduct,
-        setSelectedProduct,
         showBoxDrawer,
         showAddProductModal
     } = useDashboard()
@@ -52,10 +50,7 @@ const DashboardPage = () => {
                     boxes={boxes}
                 />
                 <div className='w-full md:w-1/2'>
-                    <ExpiredProductsIsland
-                        handleProductClick={(product) => setSelectedProduct(product)}
-                        selectedProduct={selectedProduct}
-                    />
+                    <ExpiredProductsIsland />
                 </div>
             </div>
 
