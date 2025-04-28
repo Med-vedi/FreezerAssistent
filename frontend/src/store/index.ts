@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/dist/query';
+import { setupListeners } from '@reduxjs/toolkit/query/react';
 import { userApi } from './users/users.api';
 import { boxesApi } from './boxes/boxes.api';
 import userReducer from './users/users.slice';
