@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from './models';
 import { userApi } from './users.api';
 
@@ -19,7 +19,7 @@ export const userSlice = createSlice({
     extraReducers: (builder) => {
         builder.addMatcher(
             userApi.endpoints.getUser.matchFulfilled,
-            (state, action) => {
+            (state, action: PayloadAction<{ user: User }>) => {
                 state.user = action.payload.user;
             }
         );
